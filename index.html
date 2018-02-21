@@ -203,11 +203,6 @@
             main.newAcceleration = 0;
             main.newColor = 'ffffff';
 
-      
-
-
-
-
             main.bodies = [
                 new Body("Sun", 1047.68796, 1, [1.49505E-03, 6.37701E-03, -1.1279E-04],
                          [-0.00226455, 0.001697682, 0.000054057], 0, 0xffff33),
@@ -273,8 +268,8 @@
                 scene = new THREE.Scene();
                 camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100000);
                 camera.position.set(500, -500, 500);
-                camera.lookAt(new THREE.Vector3());
-
+                camera.up.set( 0, 0, 1 );
+              
                 for (let i in main.bodies) {
                     addToScene(main.bodies[i])
                 }
@@ -357,13 +352,15 @@
                   break;
                 case 2:
                   main.mouseDrag = false;
-                  let newPlanet = new Body('newBody', 1, 1,
-                      [newBody.position.x / 100, newBody.position.y / 100, newBody.position.z / 100],
-                      [dragVector.x / 10, dragVector.y / 10, dragVector.z / 10], 0, newBody.material.color);
-                  main.bodies.push(newPlanet);
-                  addToScene(newPlanet);
-                  scene.remove(newBody);
-                  main.creation = false;
+                  if(main.creation){
+                    main.creation = false;
+                    let newPlanet = new Body('newBody', 1, 1,
+                        [newBody.position.x / 100, newBody.position.y / 100, newBody.position.z / 100],
+                        [dragVector.x / 10, dragVector.y / 10, dragVector.z / 10], 0, newBody.material.color);
+                    main.bodies.push(newPlanet);
+                    addToScene(newPlanet);
+                    scene.remove(newBody);
+                  }
                   break;
               }
             }
@@ -386,8 +383,6 @@
                     if (!body.toDestroy) {
                         let mesh = body.mesh;
                         let coord = transformInScreenCoord(body.position);
-                        mesh.rotation.x += 0.005;
-                        mesh.rotation.y += 0.005;
                         mesh.position.x = coord.x;
                         mesh.position.y = coord.y;
                         mesh.position.z = coord.z;
@@ -406,27 +401,12 @@
                     newBody.position.x = pickVector3FromScene(planeZ).x;
                     newBody.position.y = pickVector3FromScene(planeZ).y;
                     newBody.position.z = pickVector3FromScene(planeZ).z;
-                    //console.log( newBody.position.z );
                     controls.enabled = false;
+//                     main.creation = false;
                     controls.update();
                 } else if( main.creation && main.mouseDrag ){
                     dragEnd = pickVector3FromScene( planeZ );
                     dragVector = dragEnd.sub( dragStart );
-                    var loader = new THREE.FontLoader();
-                    loader.load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
-
-                      var textgeometry = new THREE.TextGeometry( dragVector.length(), {
-                        font: font,
-                        size: 80,
-                        height: 5,
-                        curveSegments: 12,
-                        bevelEnabled: true,
-                        bevelThickness: 10,
-                        bevelSize: 8,
-                        bevelSegments: 5
-                      } );
-                    } );
-                    scene.add(textgeometry)
                     controls.enabled = false;
                     controls.update();
                 } else {
