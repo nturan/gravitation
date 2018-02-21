@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html ng-app="gravitationApp">
+<head>
+    <title>Gravitation</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="Body.js"></script>
+    <script src="three.min.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script src="Gravity.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+
+        #menu {
+            top: 10px;
+            right: 10px;
+        }
+
+        #bodies-list {
+            bottom: 10px;
+            right: 10px;
+        }
+
+        .gui {
+            padding: 10px;
+            position: absolute;
+            color: white;
+            opacity: 0.2;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .gui:hover {
+            opacity: 1;
+            transition: none;
+        }
+
+        .row {
+            margin-bottom: 10px;
+        }
+
+        .vector input {
+            width: 50px;
+        }
+
+        td {
+            padding: 5px;
+        }
+
+        tbody tr:hover {
+            background-color: gray;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body ng-controller="MainController as main">
+
+<div id="menu" class="gui">
+    <div class='row'>
+        <label>
+            <input type="checkbox" ng-model="main.showAxes" ng-change="main.toggleAxes()">
+            Toggle Axes
+        </label>
+    </div>
+    <div class='row'>
+        <label>
+            <input type="checkbox" ng-model="main.showGrid" ng-change="main.toggleGrid()">
+            Show ecliptic plane
+        </label>
+    </div>
+    <div class='row'>
+        <button ng-click="main.resetCamera()">Reset Camera</button>
+        <button ng-click="main.createBody()">Create Body</button>
+    </div>
+</div>
+
+<div id="bodies-list" class="gui">
+    <button ng-click="main.toggleBodiesList()">Toggle List</button>
+    <div ng-show="main.bodiesListShown">
+        <table>
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Mass</th>
+                <th>Radius</th>
+                <th>Position (x,y,z)</th>
+                <th>Velocity (x,y,z)</th>
+                <th>Acceleration (x, y, z)</th>
+                <th>Color</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tfoot>
+            <tr>
+                <td><input type="text" ng-model="main.newName" placeholder="Name"></td>
+                <td><input type="number" ng-model="main.newMass" step="0.1" placeholder="Mass"></td>
+                <td><input type="number" ng-model="main.newRadius" step="1" placeholder="Radius"></td>
+                <td class="vector">
+                    <input type="number" ng-model="main.newPositionX" step="0.1" placeholder="x">
+                    <input type="number" ng-model="main.newPositionY" step="0.1" placeholder="y">
+                    <input type="number" ng-model="main.newPositionZ" step="0.1" placeholder="z">
+                </td>
+                <td class="vector">
+                    <input type="number" ng-model="main.newVelocityX" step="0.1" placeholder="x">
+                    <input type="number" ng-model="main.newVelocityY" step="0.1" placeholder="y">
+                    <input type="number" ng-model="main.newVelocityZ" step="0.1" placeholder="z">
+                </td>
+                <td><input type="number" ng-model="main.newAcceleration" step="0.1" placeholder="Acceleration"></td>
+                <td>#<input type="text" ng-model="main.newColor" step="0.1" placeholder="Color"></td>
+                <td>
+                    <button ng-click="main.add()">Add</button>
+                </td>
+            </tr>
+            </tfoot>
+            <tbody>
+            <tr ng-repeat="body in main.bodies" ng-click="main.track(body)">
+                <td>{{body.name}}</td>
+                <td>{{body.mass}}</td>
+                <td>{{body.radius}}</td>
+                <td>({{body.formatPosition()}})</td>
+                <td>({{body.formatVelocity()}})</td>
+                <td>({{body.formatAcceleration()}})</td>
+                <td><span style="color: #{{body.color.toString(16)}}">#{{body.color.toString(16)}}</span></td>
+                <td>
+                    <button ng-click="main.remove(body)">Remove</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script type="text/javascript">
+    angular.module('gravitationApp', [])
+        .controller('MainController', function ($scope) {
+            let main = this;
+            let scene, camera, renderer, controls;
+            var dragStart = new THREE.Vector3();
+            var dragEnd = new THREE.Vector3();
+            var dragVector = new THREE.Vector3();
+            let mouseDrag = false;
+            let raycaster = new THREE.Raycaster();
+            let mouse = new THREE.Vector2();
+            let plgeometry = new THREE.PlaneGeometry(100000, 100000);
+            let plmaterial = new THREE.MeshBasicMaterial({color: 0xffff00, side: THREE.DoubleSide});
+            let nBgeometry = new THREE.IcosahedronGeometry(3, 2);
+            let nBmaterial = new THREE.MeshPhongMaterial({
+                color: 0x000000,
+                emissive: 0x072534,
+                side: THREE.DoubleSide,
+                shading: THREE.FlatShading
+            });
+            let newBody = new THREE.Mesh(nBgeometry, nBmaterial);
+            newBody.name = "newCreation";
+            let planeZ = new THREE.Mesh(plgeometry, plmaterial);
+            let axisHelper = new THREE.AxisHelper(500);
+            axisHelper.name = "AxisHelper";
+
+            let gridHelper = new THREE.PolarGridHelper(500, 50, 10, 50);
+            gridHelper.rotation.x = Math.PI / 2;
+            gridHelper.name = "PolarGrid";
+
+            this.toggleAxes = function () {
+                if (main.showAxes)
+                    scene.add(axisHelper);
+                else
+                    scene.remove(axisHelper);
+
+            };
+
+            // Show / Hide Ecliptic Plane
+            main.toggleGrid = function () {
+                if (main.showGrid)
+                    scene.add(gridHelper);
+                else
+                    scene.remove(gridHelper);
+            };
+
+            main.resetCamera = function () {
+                controls.reset();
+            };
+
+            main.createBody = function () {
+                main.creation = true;
+                newBody.position = new THREE.Vector3(0, 0, 0);
+                scene.add(newBody);
+            };
+
+            function transformInScreenCoord(r) {
+                return {x: r[0] * 100, y: r[1] * 100, z: r[2] * 100};
+            }
+
+            main.newName = 'New';
+            main.newMass = 1;
+            main.newRadius = 1;
+            main.newPositionX = 1;
+            main.newPositionY = 0;
+            main.newPositionZ = 0;
+            main.newVelocityX = 0;
+            main.newVelocityY = 5;
+            main.newVelocityZ = 0;
+            main.newAcceleration = 0;
+            main.newColor = 'ffffff';
+
+      
+
+
+
+
+            main.bodies = [
+                new Body("Sun", 1047.68796, 1, [1.49505E-03, 6.37701E-03, -1.1279E-04],
+                         [-0.00226455, 0.001697682, 0.000054057], 0, 0xffff33),
+                new Body("Mercur", 1.7393 / 10000, 1, [3.595E-01, -1.05999E-01,-4.214E-02],
+                         [1.07785275, 10.263525, 0.739886925], 0),
+                new Body("Earth", 3.1477 / 1000, 1, [-8.721154277716080E-01, 4.698459687381059E-01, -1.260347840702047E-04],
+                         [-3.0480, -5.574941, 0.00034297522], 0, 0x3333ff),
+                new Body("Mars", 3.4 / 10000, 1, [-1.248998060571419E+00, -9.604697558207245E-01,  1.031674273903143E-02],
+                         [3.3157, -3.604886, -0.156945], 0, 0xff3333),
+                new Body("Jupiter", 1, 1, [ -4.015538775246275E+00, -3.636694545020656E+00,  1.049019398833478E-01],
+                         [1.81778, -1.911853, -0.032721], 0)];
+
+            main.add = function () {
+                let color = parseInt('0x' + main.newColor);
+                let body = new Body(main.newName, main.newMass, main.newRadius, [main.newPositionX, main.newPositionY, main.newPositionX], [main.newVelocityX, main.newVelocityY, main.newVelocityZ], main.newAcceleration, color);
+                main.bodies.push(body);
+                addToScene(body);
+            };
+
+            main.remove = function (body) {
+                let i = main.bodies.indexOf(body);
+                scene.remove(body.mesh);
+                main.bodies.splice(i, 1);
+            };
+
+            function addToScene(body) {
+                let geometry = new THREE.IcosahedronGeometry(3, 2);
+                let material = new THREE.MeshPhongMaterial({
+                    color: body.color,
+                    emissive: 0x072534,
+                    side: THREE.DoubleSide,
+                    shading: THREE.FlatShading
+                });
+                body.mesh = new THREE.Object3D();
+                // just for white lines on a body. could be just body.mesh = new THREE.Mesh(geometry, material);
+                body.mesh.add(new THREE.LineSegments(
+                    new THREE.WireframeGeometry(geometry),
+
+                    new THREE.LineBasicMaterial({
+                        color: 0xffffff,
+                        transparent: true,
+                        opacity: 0.5
+                    })
+                ));
+                body.mesh.add(new THREE.Mesh(geometry, material));
+
+                body.mesh.name = body.name;
+                scene.add(body.mesh);
+
+                let coord = transformInScreenCoord(body.position);
+                body.mesh.position = new THREE.Vector3(coord.x, coord.y, coord.z);
+            }
+
+            main.track = function (body) {
+                main.tracking = body;
+            };
+
+            init();
+            animate();
+
+            function init() {
+
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100000);
+                camera.position.set(500, -500, 500);
+                camera.lookAt(new THREE.Vector3());
+
+                for (let i in main.bodies) {
+                    addToScene(main.bodies[i])
+                }
+
+                //Lights
+                let light1 = new THREE.PointLight(0xffaaaa, 2, 0, 0);
+
+                light1.position.set(0, 0, 0);
+                // light1.color.setHSL( 0.55, 0.9, 0.5 );
+                scene.add(light1);
+
+                let light2 = new THREE.AmbientLight(0x333333);
+                scene.add(light2);
+
+                renderer = new THREE.WebGLRenderer({antialias: true});
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                document.body.appendChild(renderer.domElement);
+
+                //Ich wuerde unsere eigene Control Funktion schreiben. Das ist unhandlich
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 1;
+                // controls.enableZoom = true;
+                main.tracking = null;
+
+                window.addEventListener('resize', onWindowResize, false);
+                window.addEventListener('mousedown', onMouseDown, false);
+                window.addEventListener('mousemove', onMouseMove, false);
+                window.addEventListener('mouseup', onMouseUp, false);
+
+            }
+
+            function onMouseDown(event) {
+
+                switch (event.button) {
+                    case 0:
+
+                          raycaster.setFromCamera( mouse, camera );
+
+                          // calculate objects intersecting the picking ray
+
+                          for (let i in main.bodies) {
+                              let body = main.bodies[i];
+
+                              let intersect = raycaster.intersectObject(body.mesh.children[1]);
+
+                              if (intersect.length > 0) {
+                                  main.track(body);
+                                  return;
+                              }
+                          }
+                        break;
+                    case 1:
+                        break;
+                    case 2:
+
+                        if (main.creation) {
+                            main.mouseDrag = true;
+                            dragStart = pickVector3FromScene(planeZ);
+                        }else{
+                          main.tracking = null;
+                        }
+                        break;
+                }
+            }
+
+            function onMouseMove(event) {
+                // calculate mouse position in normalized device coordinates
+                // (-1 to +1) for both components
+                mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+                mouse.y = -( event.clientY / window.innerHeight ) * 2 + 1;
+            }
+
+            function onMouseUp( event ){
+              switch ( event.button ){
+                case 0:
+                  break;
+                case 1:
+                  break;
+                case 2:
+                  main.mouseDrag = false;
+                  let newPlanet = new Body('newBody', 1, 1,
+                      [newBody.position.x / 100, newBody.position.y / 100, newBody.position.z / 100],
+                      [dragVector.x / 10, dragVector.y / 10, dragVector.z / 10], 0, newBody.material.color);
+                  main.bodies.push(newPlanet);
+                  addToScene(newPlanet);
+                  scene.remove(newBody);
+                  main.creation = false;
+                  break;
+              }
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function animate(apply) {
+
+                requestAnimationFrame(animate);
+
+                Gravity.calculateGravity(main.bodies);
+
+                for (let i in main.bodies) {
+                    let body = main.bodies[i];
+
+                    if (!body.toDestroy) {
+                        let mesh = body.mesh;
+                        let coord = transformInScreenCoord(body.position);
+                        mesh.rotation.x += 0.005;
+                        mesh.rotation.y += 0.005;
+                        mesh.position.x = coord.x;
+                        mesh.position.y = coord.y;
+                        mesh.position.z = coord.z;
+                    } else {
+                        main.remove(body);
+                    }
+                }
+
+                if (main.tracking) {
+                    let pos = main.tracking.mesh.position;
+                    //camera.position.set(50, 50, 50);
+                    controls.target = new THREE.Vector3(pos.x, pos.y, pos.z);
+                    controls.update();
+                }
+                if (main.creation && !main.mouseDrag) {
+                    newBody.position.x = pickVector3FromScene(planeZ).x;
+                    newBody.position.y = pickVector3FromScene(planeZ).y;
+                    newBody.position.z = pickVector3FromScene(planeZ).z;
+                    //console.log( newBody.position.z );
+                    controls.enabled = false;
+                    controls.update();
+                } else if( main.creation && main.mouseDrag ){
+                    dragEnd = pickVector3FromScene( planeZ );
+                    dragVector = dragEnd.sub( dragStart );
+                    var loader = new THREE.FontLoader();
+                    loader.load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
+
+                      var textgeometry = new THREE.TextGeometry( dragVector.length(), {
+                        font: font,
+                        size: 80,
+                        height: 5,
+                        curveSegments: 12,
+                        bevelEnabled: true,
+                        bevelThickness: 10,
+                        bevelSize: 8,
+                        bevelSegments: 5
+                      } );
+                    } );
+                    scene.add(textgeometry)
+                    controls.enabled = false;
+                    controls.update();
+                } else {
+                    controls.enabled = true;
+                    controls.update();
+                }
+
+                if (main.bodiesListShown && apply)
+                    $scope.$apply();
+                renderer.render(scene, camera);
+            }
+
+            function pickVector3FromScene(plane) {
+
+                //todo: check whether the mouse on plane
+
+                // update the picking ray with the camera and mouse position
+                raycaster.setFromCamera(mouse, camera);
+
+                // calculate objects intersecting the picking ray
+                let intersect = raycaster.intersectObject(plane);
+                return intersect[0].point;
+            }
+
+          
+
+            main.bodiesListShown = false;
+            main.toggleBodiesList = function () {
+                main.bodiesListShown = !main.bodiesListShown;
+            }
+            
+            
+
+        });
+</script>
+</body>
+</html>
