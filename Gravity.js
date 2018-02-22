@@ -1,7 +1,7 @@
 Gravity = {
 
     G: 0.03765,
-    step: 1/365,
+    step: 1/3650,
 
     calculateGravity: function (bodies) {
         let n = bodies.length;

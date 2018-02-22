@@ -73,6 +73,7 @@
     <div class='row'>
         <button ng-click="main.resetCamera()">Reset Camera</button>
         <button ng-click="main.createBody()">Create Body</button>
+        <button ng-click="main.togglePause()">Pause Simulation</button>
     </div>
     <div class='row'>
       <label>{{frameRate}} Frames per Second</label>
@@ -134,22 +135,33 @@
         </table>
     </div>
 </div>
+  
 <script type="text/javascript">
     angular.module('gravitationApp', [])
         .controller('MainController', function ($scope) {
             let main = this;
             let scene, camera, renderer, controls;
+      //control variables
             var dragStart = new THREE.Vector3();
             var dragEnd = new THREE.Vector3();
             var dragVector = new THREE.Vector3();
+            let mouseDrag = false;
+            let pauseSim = false;
+            main.bodiesListShown = false;
+            let mouse = new THREE.Vector2();
+      //time control variables
             let startCounter = new Date().getTime();
             let frmTime = startCounter;
+            let phsStart = startCounter;
+            let phsTime = startCounter;
+            let phsTicksPerSecond = 30;
+            let phsCycle = 1000/phsTicksPerSecond;
             let frmCounter = 0;
-            let mouseDrag = false;
-            let raycaster = new THREE.Raycaster();
-            let mouse = new THREE.Vector2();
+      // creation plane
             let plgeometry = new THREE.PlaneGeometry(100000, 100000);
             let plmaterial = new THREE.MeshBasicMaterial({color: 0xffff00, side: THREE.DoubleSide});
+            let planeZ = new THREE.Mesh(plgeometry, plmaterial);
+      // newBody
             let nBgeometry = new THREE.IcosahedronGeometry(3, 2);
             let nBmaterial = new THREE.MeshPhongMaterial({
                 color: 0x000000,
@@ -159,21 +171,21 @@
             });
             let newBody = new THREE.Mesh(nBgeometry, nBmaterial);
             newBody.name = "newCreation";
-            let planeZ = new THREE.Mesh(plgeometry, plmaterial);
+      
+      //axis
             let axisHelper = new THREE.AxesHelper(500);
             axisHelper.name = "AxisHelper";
-
-            let gridHelper = new THREE.PolarGridHelper(500, 50, 10, 50);
-            gridHelper.rotation.x = Math.PI / 2;
-            gridHelper.name = "PolarGrid";
 
             this.toggleAxes = function () {
                 if (main.showAxes)
                     scene.add(axisHelper);
                 else
                     scene.remove(axisHelper);
-
             };
+            
+            let gridHelper = new THREE.PolarGridHelper(500, 50, 10, 50);
+            gridHelper.rotation.x = Math.PI / 2;
+            gridHelper.name = "PolarGrid";
 
             // Show / Hide Ecliptic Plane
             main.toggleGrid = function () {
@@ -182,6 +194,11 @@
                 else
                     scene.remove(gridHelper);
             };
+      
+      
+            main.toggleBodiesList = function () {
+                main.bodiesListShown = !main.bodiesListShown;
+            }
 
             main.resetCamera = function () {
                 controls.reset();
@@ -189,13 +206,19 @@
 
             main.createBody = function () {
                 main.creation = true;
+                pauseSim = true;
                 newBody.position = new THREE.Vector3(0, 0, 0);
                 scene.add(newBody);
             };
+      
+            this.togglePause = function () {
+                if (pauseSim && !main.creation)
+                    pauseSim = false;
+                else
+                    pauseSim = true;
+            };
 
-            function transformInScreenCoord(r) {
-                return {x: r[0] * 100, y: r[1] * 100, z: r[2] * 100};
-            }
+
 
             main.newName = 'New';
             main.newMass = 1;
@@ -208,15 +231,17 @@
             main.newVelocityZ = 0;
             main.newAcceleration = 0;
             main.newColor = 'ffffff';
-
+      
             main.bodies = [
                 new Body("Sun", 1047.68796, 1, [1.49505E-03, 6.37701E-03, -1.1279E-04],
                          [-0.00226455, 0.001697682, 0.000054057], 0, 0xffff33),
-                new Body("Mercur", 1.7393 / 10000, 1, [3.595E-01, -1.05999E-01,-4.214E-02],
+                new Body("Mercur", 1.7393E-4, 1, [3.595E-01, -1.05999E-01,-4.214E-02],
                          [1.07785275, 10.263525, 0.739886925], 0),
-                new Body("Earth", 3.1477 / 1000, 1, [-8.721154277716080E-01, 4.698459687381059E-01, -1.260347840702047E-04],
+                new Body("Earth", 3.1477E-3, 1, [-8.721154277716080E-01, 4.698459687381059E-01, -1.260347840702047E-04],
                          [-3.0480, -5.574941, 0.00034297522], 0, 0x3333ff),
-                new Body("Mars", 3.4 / 10000, 1, [-1.248998060571419E+00, -9.604697558207245E-01,  1.031674273903143E-02],
+                new Body("Moon", 0.00003869931, 0.2, [-8.699707030508036E-01,  4.712077697616551E-01, -3.549570431330579E-04],
+                         [-3.17196, -5.3969, -0.003045], 0),
+                new Body("Mars", 3.4E-4, 1, [-1.248998060571419E+00, -9.604697558207245E-01,  1.031674273903143E-02],
                          [3.3157, -3.604886, -0.156945], 0, 0xff3333),
                 new Body("Jupiter", 1, 1, [ -4.015538775246275E+00, -3.636694545020656E+00,  1.049019398833478E-01],
                          [1.81778, -1.911853, -0.032721], 0)];
@@ -235,7 +260,7 @@
             };
 
             function addToScene(body) {
-                let geometry = new THREE.IcosahedronGeometry(3, 2);
+                let geometry = new THREE.IcosahedronGeometry(1, 2);
                 let material = new THREE.MeshPhongMaterial({
                     color: body.color,
                     emissive: 0x072534,
@@ -302,27 +327,87 @@
                 // controls.enableZoom = true;
                 main.tracking = null;
 
-                window.addEventListener('resize', onWindowResize, false);
-                window.addEventListener('mousedown', onMouseDown, false);
-                window.addEventListener('mousemove', onMouseMove, false);
-                window.addEventListener('mouseup', onMouseUp, false);
-
             }
+
+            function animate(apply) {
+                requestAnimationFrame(animate);
+                              //fps counter
+                frmTime = new Date().getTime();
+                phsTime = frmTime;
+                if (frmTime - startCounter >= 1000){
+                  startCounter = new Date().getTime();
+                  $scope.$apply();
+                  $scope.frameRate = frmCounter;
+                  frmCounter = 0;
+                }else{
+                  frmCounter++;
+                }
+                
+                if(phsTime - phsStart>= phsCycle && !pauseSim){
+                  phsStart = new Date().getTime();
+                  physicsTick();
+                }
+
+
+                if (main.tracking) {
+                    let pos = main.tracking.mesh.position;
+                    //camera.position.set(50, 50, 50);
+                    controls.target = new THREE.Vector3(pos.x, pos.y, pos.z);
+                    controls.update();
+                }
+                if (main.creation && !main.mouseDrag) {
+                    newBody.position.x = pickVector3FromScene(planeZ, mouse, camera).x;
+                    newBody.position.y = pickVector3FromScene(planeZ, mouse, camera).y;
+                    newBody.position.z = pickVector3FromScene(planeZ, mouse, camera).z;
+                    controls.enabled = false;
+                    controls.update();
+                } else if( main.creation && main.mouseDrag ){
+                    dragEnd = pickVector3FromScene( planeZ, mouse, camera );
+                    dragVector = dragEnd.sub( dragStart );
+                    controls.enabled = false;
+                    controls.update();
+                } else {
+                    controls.enabled = true;
+                    controls.update();
+                }
+
+                if (main.bodiesListShown && apply)
+                    $scope.$apply();
+                renderer.render(scene, camera);
+            }
+
+
+            function physicsTick(){
+                Gravity.calculateGravity(main.bodies);
+                for (let i in main.bodies) {
+                    let body = main.bodies[i];
+
+                    if (!body.toDestroy) {
+                        let mesh = body.mesh;
+                        let coord = transformInScreenCoord(body.position);
+                        mesh.position.x = coord.x;
+                        mesh.position.y = coord.y;
+                        mesh.position.z = coord.z;
+                    } else {
+                        main.remove(body);
+                    }
+                }
+            }
+            
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('mousedown', onMouseDown, false);
+            window.addEventListener('mousemove', onMouseMove, false);
+            window.addEventListener('mouseup', onMouseUp, false);
 
             function onMouseDown(event) {
 
                 switch (event.button) {
                     case 0:
-
+                          let raycaster = new THREE.Raycaster();
                           raycaster.setFromCamera( mouse, camera );
-
-                          // calculate objects intersecting the picking ray
-
                           for (let i in main.bodies) {
                               let body = main.bodies[i];
-
                               let intersect = raycaster.intersectObject(body.mesh.children[1]);
-
                               if (intersect.length > 0) {
                                   main.track(body);
                                   return;
@@ -332,10 +417,9 @@
                     case 1:
                         break;
                     case 2:
-
                         if (main.creation) {
                             main.mouseDrag = true;
-                            dragStart = pickVector3FromScene(planeZ);
+                            dragStart = pickVector3FromScene(planeZ, mouse, camera);
                         }else{
                           main.tracking = null;
                         }
@@ -360,6 +444,7 @@
                   main.mouseDrag = false;
                   if(main.creation){
                     main.creation = false;
+                    pauseSim = false;
                     let newPlanet = new Body('newBody', 1, 1,
                         [newBody.position.x / 100, newBody.position.y / 100, newBody.position.z / 100],
                         [dragVector.x / 10, dragVector.y / 10, dragVector.z / 10], 0, newBody.material.color);
@@ -377,86 +462,25 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
 
-            function animate(apply) {
-                requestAnimationFrame(animate);
-                              //fps counter
-                frmTime = new Date().getTime();
-                if (frmTime - startCounter >= 1000){
-                  startCounter = new Date().getTime();
-                  $scope.$apply();
-                  $scope.frameRate = frmCounter;
-                  frmCounter = 0;
-                }else{
-                  frmCounter++;
-                }
-                
-                
-
-                Gravity.calculateGravity(main.bodies);
-
-                for (let i in main.bodies) {
-                    let body = main.bodies[i];
-
-                    if (!body.toDestroy) {
-                        let mesh = body.mesh;
-                        let coord = transformInScreenCoord(body.position);
-                        mesh.position.x = coord.x;
-                        mesh.position.y = coord.y;
-                        mesh.position.z = coord.z;
-                    } else {
-                        main.remove(body);
-                    }
-                }
-
-                if (main.tracking) {
-                    let pos = main.tracking.mesh.position;
-                    //camera.position.set(50, 50, 50);
-                    controls.target = new THREE.Vector3(pos.x, pos.y, pos.z);
-                    controls.update();
-                }
-                if (main.creation && !main.mouseDrag) {
-                    newBody.position.x = pickVector3FromScene(planeZ).x;
-                    newBody.position.y = pickVector3FromScene(planeZ).y;
-                    newBody.position.z = pickVector3FromScene(planeZ).z;
-                    controls.enabled = false;
-                    controls.update();
-                } else if( main.creation && main.mouseDrag ){
-                    dragEnd = pickVector3FromScene( planeZ );
-                    dragVector = dragEnd.sub( dragStart );
-                    controls.enabled = false;
-                    controls.update();
-                } else {
-                    controls.enabled = true;
-                    controls.update();
-                }
-
-                if (main.bodiesListShown && apply)
-                    $scope.$apply();
-                renderer.render(scene, camera);
-            }
-
-            function pickVector3FromScene(plane) {
+        });
+  
+        function pickVector3FromScene(plane, mouse, camera) {
 
                 //todo: check whether the mouse on plane
 
                 // update the picking ray with the camera and mouse position
+                
+                let raycaster = new THREE.Raycaster();
                 raycaster.setFromCamera(mouse, camera);
 
                 // calculate objects intersecting the picking ray
                 let intersect = raycaster.intersectObject(plane);
                 return intersect[0].point;
-            }
-
-          
-
-            main.bodiesListShown = false;
-            main.toggleBodiesList = function () {
-                main.bodiesListShown = !main.bodiesListShown;
-            }
-            
-            
-
-        });
+        }
+  
+        function transformInScreenCoord(r) {
+            return {x: r[0] * 100, y: r[1] * 100, z: r[2] * 100};
+        }
 </script>
 </body>
 </html>
