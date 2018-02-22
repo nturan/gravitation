@@ -1,7 +1,7 @@
 Gravity = {
 
     G: 0.03765,
-    step: 1 / 3650,
+    step: 1/365,
 
     calculateGravity: function (bodies) {
         let n = bodies.length;
@@ -37,7 +37,7 @@ Gravity = {
 
                     if (accMod > 10000) {
                         if (bodies[i].mass > bodies[j].mass){
-		            bodies[j].toDestroy = true;
+		           						 bodies[j].toDestroy = true;
                         } else if (bodies[i].mass < bodies[j].mass){
 			    bodies[i].toDestroy = true;
 			} else {

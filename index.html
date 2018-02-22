@@ -74,6 +74,9 @@
         <button ng-click="main.resetCamera()">Reset Camera</button>
         <button ng-click="main.createBody()">Create Body</button>
     </div>
+    <div class='row'>
+      <label>{{frameRate}} Frames per Second</label>
+    </div>
 </div>
 
 <div id="bodies-list" class="gui">
@@ -139,6 +142,9 @@
             var dragStart = new THREE.Vector3();
             var dragEnd = new THREE.Vector3();
             var dragVector = new THREE.Vector3();
+            let startCounter = new Date().getTime();
+            let frmTime = startCounter;
+            let frmCounter = 0;
             let mouseDrag = false;
             let raycaster = new THREE.Raycaster();
             let mouse = new THREE.Vector2();
@@ -154,7 +160,7 @@
             let newBody = new THREE.Mesh(nBgeometry, nBmaterial);
             newBody.name = "newCreation";
             let planeZ = new THREE.Mesh(plgeometry, plmaterial);
-            let axisHelper = new THREE.AxisHelper(500);
+            let axisHelper = new THREE.AxesHelper(500);
             axisHelper.name = "AxisHelper";
 
             let gridHelper = new THREE.PolarGridHelper(500, 50, 10, 50);
@@ -372,8 +378,19 @@
             }
 
             function animate(apply) {
-
                 requestAnimationFrame(animate);
+                              //fps counter
+                frmTime = new Date().getTime();
+                if (frmTime - startCounter >= 1000){
+                  startCounter = new Date().getTime();
+                  $scope.$apply();
+                  $scope.frameRate = frmCounter;
+                  frmCounter = 0;
+                }else{
+                  frmCounter++;
+                }
+                
+                
 
                 Gravity.calculateGravity(main.bodies);
 
@@ -402,7 +419,6 @@
                     newBody.position.y = pickVector3FromScene(planeZ).y;
                     newBody.position.z = pickVector3FromScene(planeZ).z;
                     controls.enabled = false;
-//                     main.creation = false;
                     controls.update();
                 } else if( main.creation && main.mouseDrag ){
                     dragEnd = pickVector3FromScene( planeZ );
