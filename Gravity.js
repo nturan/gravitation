@@ -10,6 +10,10 @@ Gravity = {
             let body_i = bodies[i];
             let r_i = body_i.position;
             let a_i = [0, 0, 0];
+						let distCent = Gravity.magnitudeVec3(r_i);
+						if (distCent>50){
+								bodies[i].toDestroy = true;
+								}
             for (let j = 0; j < n; j++) {
                 if (i != j) {
                     let a_ij = [0, 0, 0];
@@ -20,34 +24,29 @@ Gravity = {
                                       r_j[1] - r_i[1],
                                       r_j[2] - r_i[2]];
 
-                    let distance = Math.sqrt(
-                        Math.pow(diffVector[0], 2) +
-                        Math.pow(diffVector[1], 2) +
-                        Math.pow(diffVector[2], 2));
+                    let distance = Gravity.magnitudeVec3(diffVector);
 
                     let mass = body_j.mass;
 
                     a_ij[0] = (Gravity.G * mass / Math.pow(distance, 3)) * diffVector[0];
                     a_ij[1] = (Gravity.G * mass / Math.pow(distance, 3)) * diffVector[1];
                     a_ij[2] = (Gravity.G * mass / Math.pow(distance, 3)) * diffVector[2];
-                    accMod = Math.sqrt(
-                        Math.pow(a_ij[0], 2) +
-                        Math.pow(a_ij[1], 2) +
-                        Math.pow(a_ij[2], 2));
+										accMod = Gravity.magnitudeVec3(a_ij);
 
-                    if (accMod > 10000) {
+                    if (accMod > 100000) {
                         if (bodies[i].mass > bodies[j].mass){
 		           						 bodies[j].toDestroy = true;
                         } else if (bodies[i].mass < bodies[j].mass){
-			    bodies[i].toDestroy = true;
-			} else {
-			    bodies[i].toDestroy = true;
-			    bodies[j].toDestroy = true;
-			}
+														bodies[i].toDestroy = true;
+												} else {
+														bodies[i].toDestroy = true;
+														bodies[j].toDestroy = true;
+												}
                     }
                     a_i[0] += a_ij[0];
                     a_i[1] += a_ij[1];
                     a_i[2] += a_ij[2];
+
                 }
             }
             body_i.acceleration = a_i;
@@ -80,5 +79,9 @@ Gravity = {
         return [val[0] + sixth_step * (k1[0] + 2 * k2[0] + 3 * k3[0] + k4[0]),
             val[1] + sixth_step * (k1[1] + 2 * k2[1] + 3 * k3[1] + k4[1]),
             val[2] + sixth_step * (k1[2] + 2 * k2[2] + 3 * k3[2] + k4[2])];
-    }
+    },
+		
+		magnitudeVec3: function (vec){
+				return Math.sqrt(Math.pow(vec[0], 2) + Math.pow(vec[1], 2) + Math.pow(vec[2], 2));
+		}
 };

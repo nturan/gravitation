@@ -57,6 +57,27 @@
 </head>
 <body ng-controller="MainController as main">
 
+
+<div id="creationOptions" class="gui" ng-show="main.creation">
+  <div class ="row">
+    <label>
+      Name: <input type="text" ng-model="main.newName" placeholder="Name">
+    </label>
+    <label>
+      Mass: <input type="text" ng-model="main.newMass" placeholder="Mass">
+       in 10^23 kg
+    </label>
+  </div>
+<div class ="row">
+    <label>
+      Radius: <input type="text" ng-model="main.newRadius" placeholder="Radius">
+    </label>
+    <label>
+      Start velocity: {{main.newVelocity}}
+       in AU/year
+    </label>
+  </div>
+</div>
 <div id="menu" class="gui">
     <div class='row'>
         <label>
@@ -96,28 +117,6 @@
                 <th></th>
             </tr>
             </thead>
-            <tfoot>
-            <tr>
-                <td><input type="text" ng-model="main.newName" placeholder="Name"></td>
-                <td><input type="number" ng-model="main.newMass" step="0.1" placeholder="Mass"></td>
-                <td><input type="number" ng-model="main.newRadius" step="1" placeholder="Radius"></td>
-                <td class="vector">
-                    <input type="number" ng-model="main.newPositionX" step="0.1" placeholder="x">
-                    <input type="number" ng-model="main.newPositionY" step="0.1" placeholder="y">
-                    <input type="number" ng-model="main.newPositionZ" step="0.1" placeholder="z">
-                </td>
-                <td class="vector">
-                    <input type="number" ng-model="main.newVelocityX" step="0.1" placeholder="x">
-                    <input type="number" ng-model="main.newVelocityY" step="0.1" placeholder="y">
-                    <input type="number" ng-model="main.newVelocityZ" step="0.1" placeholder="z">
-                </td>
-                <td><input type="number" ng-model="main.newAcceleration" step="0.1" placeholder="Acceleration"></td>
-                <td>#<input type="text" ng-model="main.newColor" step="0.1" placeholder="Color"></td>
-                <td>
-                    <button ng-click="main.add()">Add</button>
-                </td>
-            </tr>
-            </tfoot>
             <tbody>
             <tr ng-repeat="body in main.bodies" ng-click="main.track(body)">
                 <td>{{body.name}}</td>
@@ -205,10 +204,16 @@
             };
 
             main.createBody = function () {
+              if(main.creation){
+                main.creation = false;
+                pauseSim = false;
+                scene.remove(newBody);
+              }else{
                 main.creation = true;
                 pauseSim = true;
                 newBody.position = new THREE.Vector3(0, 0, 0);
                 scene.add(newBody);
+              }
             };
       
             this.togglePause = function () {
@@ -231,20 +236,23 @@
             main.newVelocityZ = 0;
             main.newAcceleration = 0;
             main.newColor = 'ffffff';
-      
+
+
             main.bodies = [
-                new Body("Sun", 1047.68796, 1, [1.49505E-03, 6.37701E-03, -1.1279E-04],
-                         [-0.00226455, 0.001697682, 0.000054057], 0, 0xffff33),
-                new Body("Mercur", 1.7393E-4, 1, [3.595E-01, -1.05999E-01,-4.214E-02],
-                         [1.07785275, 10.263525, 0.739886925], 0),
-                new Body("Earth", 3.1477E-3, 1, [-8.721154277716080E-01, 4.698459687381059E-01, -1.260347840702047E-04],
-                         [-3.0480, -5.574941, 0.00034297522], 0, 0x3333ff),
-                new Body("Moon", 0.00003869931, 0.2, [-8.699707030508036E-01,  4.712077697616551E-01, -3.549570431330579E-04],
-                         [-3.17196, -5.3969, -0.003045], 0),
-                new Body("Mars", 3.4E-4, 1, [-1.248998060571419E+00, -9.604697558207245E-01,  1.031674273903143E-02],
-                         [3.3157, -3.604886, -0.156945], 0, 0xff3333),
-                new Body("Jupiter", 1, 1, [ -4.015538775246275E+00, -3.636694545020656E+00,  1.049019398833478E-01],
-                         [1.81778, -1.911853, -0.032721], 0)];
+                new Body("Sun", 1.988544E+7, 1, [ 1.488845024691211E-03,  6.381654552143589E-03, -1.126420425735407E-04],
+                         [-6.208736136983524E-06,  4.640963331504805E-06,  1.483206369475573E-07], 0, 0xffff33),
+                new Body("Mercur", 3.302, 1, [ 3.614665888277512E-01, -7.759810595975869E-02, -3.999904486712141E-02],
+                         [9.302724436347369E-04,  2.866514843996328E-02,  2.256175303870725E-03], 0),
+                new Body("Venus", 48.685, 1, [ 7.264945036351604E-01, -1.957121171107659E-02, -4.230613854738632E-02],
+                         [6.278768987279022E-04,  2.012552105537308E-02,  2.395645034105181E-04], 0),
+                new Body("Earth", 59.7219, 1, [-8.803257898433657E-01,  4.545130073016067E-01, -1.251704673020013E-04],
+                         [-8.075306082562402E-03, -1.540171441572302E-02,  7.885144556138575E-07], 0, 0x3333ff),
+                new Body("Moon", 734.9E-3, 0.2, [-8.785755476608252E-01, 4.563201901680939E-01,-3.570130251523075E-04],
+                         [-8.521922410260499E-03,-1.500283383979852E-02, 4.311910684926032E-06], 0),
+                new Body("Mars", 6.4185, 1, [-1.239873336202447E+00, -9.703030342552387E-01,  9.886664338815770E-03],
+                         [9.171402633791702E-03, -9.796767140104022E-03, -4.304586786898006E-04], 0, 0xff3333),
+                new Body("Jupiter", 18981.3, 1, [-4.010558503618121E+00, -3.641925022005197E+00,  1.048122707815689E-01],
+                         [4.983260657384969E-03, -5.227190479466572E-03, -8.978151110962477E-05], 0)];
 
             main.add = function () {
                 let color = parseInt('0x' + main.newColor);
@@ -353,6 +361,8 @@
                     let pos = main.tracking.mesh.position;
                     //camera.position.set(50, 50, 50);
                     controls.target = new THREE.Vector3(pos.x, pos.y, pos.z);
+//                     gridHelper.position.x = pos.x;
+//                     gridHelper.position.y = pos.y;
                     controls.update();
                 }
                 if (main.creation && !main.mouseDrag) {
@@ -364,6 +374,10 @@
                 } else if( main.creation && main.mouseDrag ){
                     dragEnd = pickVector3FromScene( planeZ, mouse, camera );
                     dragVector = dragEnd.sub( dragStart );
+                    main.newVelocity = Gravity.magnitudeVec3([dragVector.x/10,
+                                                              dragVector.y/10,
+                                                              dragVector.z/10]);
+                    $scope.$apply();
                     controls.enabled = false;
                     controls.update();
                 } else {
@@ -422,6 +436,8 @@
                             dragStart = pickVector3FromScene(planeZ, mouse, camera);
                         }else{
                           main.tracking = null;
+                          gridHelper.position.x = 0;
+                          gridHelper.position.y = 0;
                         }
                         break;
                 }
@@ -445,9 +461,9 @@
                   if(main.creation){
                     main.creation = false;
                     pauseSim = false;
-                    let newPlanet = new Body('newBody', 1, 1,
+                    let newPlanet = new Body(main.newName, main.newMass, main.newRadius,
                         [newBody.position.x / 100, newBody.position.y / 100, newBody.position.z / 100],
-                        [dragVector.x / 10, dragVector.y / 10, dragVector.z / 10], 0, newBody.material.color);
+                        [dragVector.x / 3652.5, dragVector.y / 3652.5, dragVector.z / 3652.5], 0, newBody.material.color);
                     main.bodies.push(newPlanet);
                     addToScene(newPlanet);
                     scene.remove(newBody);
