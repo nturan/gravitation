@@ -84,11 +84,15 @@
             <input type="checkbox" ng-model="main.showAxes" ng-change="main.toggleAxes()">
             Toggle Axes
         </label>
-    </div>
-    <div class='row'>
         <label>
             <input type="checkbox" ng-model="main.showGrid" ng-change="main.toggleGrid()">
             Show ecliptic plane
+        </label>
+    </div>
+    <div class='row'>
+        <label>
+            <input type="checkbox" ng-model="main.showTraj" ng-change="main.toggleTraj()">
+            Toggle trajectories
         </label>
     </div>
     <div class='row'>
@@ -102,8 +106,7 @@
     <div class='row'>
       <label>Simulation Speed</label>
       <select ng-model="main.simSpeed" 
-              ng-options="option.name for option in main.availableSpeeds track by option.stepSize"
-              ng-change = main.speedChange()>
+              ng-options="option.name for option in main.availableSpeeds">
       </select>
     </div>
 </div>
@@ -147,13 +150,12 @@
         .controller('MainController', function ($scope) {
             let main = this;
             let scene, camera, renderer, controls;
-            main.availableSpeeds = [{physLoop: 1, stepSize: 1/365/30/24/60, name: "minutes per second"},
+            main.availableSpeeds = [{physLoop: 1,  stepSize: 1/365/30/24/60, name: "minutes per second"},
                                     {physLoop: 60, stepSize: 1/365/30/24/60, name: "hours per second"},
-                                    {physLoop: 24, stepSize: 1/365/30/24, name: "days per second"},
-                                    {physLoop: 7, stepSize: 1/365/30, name: "weeks per second"},
-                                    {physLoop: 30, stepSize: 1/365/30,    name: "months per second"},
-                                    {physLoop: 52, stepSize: 7/365/30,     name: "years per second"}];
-            main.simSpeed = main.availableSpeeds[3];
+                                    {physLoop: 24, stepSize: 1/365/30/24,    name: "days per second"},
+                                    {physLoop: 7,  stepSize: 1/365/30,       name: "weeks per second"},
+                                    {physLoop: 30, stepSize: 1/365/30,       name: "months per second"},
+                                    {physLoop: 52, stepSize: 7/365/30,       name: "years per second"}];
       //control variables
             var dragStart = new THREE.Vector3();
             var dragEnd = new THREE.Vector3();
@@ -170,6 +172,10 @@
             let phsTicksPerSecond = 30;
             let phsCycle = 1000/phsTicksPerSecond;
             let frmCounter = 0;
+            let trajLength = 100;//just array length, calculating real time too complicated
+            let trajUpdateCounter = 0;
+            let trajUpdateFreq = 1; // phys Ticks
+
       // creation plane
             let plgeometry = new THREE.PlaneGeometry(100000, 100000);
             let plmaterial = new THREE.MeshBasicMaterial({color: 0xffff00, side: THREE.DoubleSide});
@@ -212,6 +218,22 @@
             main.toggleBodiesList = function () {
                 main.bodiesListShown = !main.bodiesListShown;
             }
+            
+            main.toggleTraj = function(){
+                if(!main.showTraj){
+                  for(let i in main.bodies){
+                    let body = main.bodies[i];
+                    scene.remove(body.trajObj);
+                    body.traj = [];
+                  }
+                }
+            }
+           
+            
+            //later i will need to remove and add all trajectories in scene
+//             main.toggleTraj = function () {
+//                 main.showTraj = !main.showTraj;
+//             }
 
             main.resetCamera = function () {
                 controls.reset();
@@ -321,6 +343,8 @@
                 scene = new THREE.Scene();
                 camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100000);
                 camera.position.set(500, -500, 500);
+                
+                main.simSpeed = main.availableSpeeds[3];
                 camera.up.set( 0, 0, 1 );
                 for (let i in main.bodies) {
                     addToScene(main.bodies[i])
@@ -372,7 +396,7 @@
 
                 if (main.tracking) {
                     let pos = main.tracking.mesh.position;
-                    //camera.position.set(50, 50, 50);
+//                     camera.position.set(pos.x+100, pos.y+100, pos.z+100);
                     controls.target = new THREE.Vector3(pos.x, pos.y, pos.z);
 //                     gridHelper.position.x = pos.x;
 //                     gridHelper.position.y = pos.y;
@@ -404,9 +428,45 @@
             }
 
 
+            function updateTraj(){
+              for (let i in main.bodies){
+                let body = main.bodies[i];
+                let traj = body.traj;
+                let coord = transformInScreenCoord(body.position);
+                traj.push(new THREE.Vector3(coord.x, coord.y, coord.z ));
+                
+                if(traj.length > trajLength){
+                  traj.shift();    
+                }
+                if(traj.length > 3){
+                  let trajCurve = new THREE.CatmullRomCurve3( traj );
+                  var trajPoints = trajCurve.getPoints( trajLength );
+                  var trajGeometry = new THREE.BufferGeometry().setFromPoints( trajPoints );
+                  var trajMaterial = new THREE.LineBasicMaterial( body.color );
+                  let trajObj = body.trajObj;
+                  scene.remove(trajObj);
+                  trajObj = new THREE.Line( trajGeometry, trajMaterial );
+                  scene.add(trajObj);
+                  body.trajObj = trajObj;
+                }
+                body.traj = traj;
+              }
+            }
+      
+      
+      
+      
             function physicsTick(){
                 Gravity.step = main.simSpeed.stepSize;
-                for (k=0; k<main.simSpeed.physLoop; k++){
+                if(main.showTraj){
+                   if(trajUpdateCounter > trajUpdateFreq){
+                     updateTraj();
+                     trajUpdateCounter = 0;
+                   }else{
+                     trajUpdateCounter++;
+                   }
+                }
+                for (let k=0; k<main.simSpeed.physLoop; k++){
                   Gravity.calculateGravity(main.bodies);
                   for (let i in main.bodies) {
                       let body = main.bodies[i];
@@ -494,10 +554,7 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
-            
-//             function main.speedChange(){
-//               console.log(main.simSpeed.id);
-//             }
+           
 
         });
   

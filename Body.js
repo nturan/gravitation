@@ -2,7 +2,8 @@ class Body {
 	//hallo aray, danke turan, verpiss dich hicham
     constructor(name, mass, radius,
                 position, velocity, acceleration = 0.0,
-                color = 0xffffff, toDestroy = false) {
+                color = 0xffffff, toDestroy = false,
+								traj=[], trajObj=null) {
         this.name = name;
         this.mass = mass/18981.3;
         this.radius = radius;
@@ -14,6 +15,8 @@ class Body {
         this.color = color;
         this.acceleration = acceleration;
         this.toDestroy = toDestroy;
+				this.traj = traj;
+				this.trajObj = trajObj;
     }
 
     formatPosition() {
