@@ -5,6 +5,8 @@ Gravity = {
 
     calculateGravity: function (bodies) {
         let n = bodies.length;
+				let barycenter = [0, 0, 0];
+				let sysMass = 0;
 
         for (let i = 0; i < n; i++) {
             let body_i = bodies[i];
@@ -56,6 +58,19 @@ Gravity = {
         for (let i = 0; i < n; i++) {
             let body = bodies[i];
             body.position = Gravity.updateK(body.velocity, body.position);
+						barycenter[0] += body.mass*body.position[0];
+						barycenter[1] += body.mass*body.position[1];
+						barycenter[2] += body.mass*body.position[2];
+						sysMass += body.mass;
+        }
+				barycenter[0] = barycenter[0]/sysMass;
+				barycenter[1] = barycenter[1]/sysMass;
+				barycenter[2] = barycenter[2]/sysMass;
+				for (let i = 0; i < n; i++) {
+            let body = bodies[i];
+            body.position[0] -= barycenter[0];
+						body.position[1] -= barycenter[1];
+						body.position[2] -= barycenter[2];
         }
     },
 

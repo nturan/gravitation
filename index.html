@@ -99,6 +99,13 @@
     <div class='row'>
       <label>{{frameRate}} Frames per Second</label>
     </div>
+    <div class='row'>
+      <label>Simulation Speed</label>
+      <select ng-model="main.simSpeed" 
+              ng-options="option.name for option in main.availableSpeeds track by option.stepSize"
+              ng-change = main.speedChange()>
+      </select>
+    </div>
 </div>
 
 <div id="bodies-list" class="gui">
@@ -140,6 +147,13 @@
         .controller('MainController', function ($scope) {
             let main = this;
             let scene, camera, renderer, controls;
+            main.availableSpeeds = [{physLoop: 1, stepSize: 1/365/30/24/60, name: "minutes per second"},
+                                    {physLoop: 60, stepSize: 1/365/30/24/60, name: "hours per second"},
+                                    {physLoop: 24, stepSize: 1/365/30/24, name: "days per second"},
+                                    {physLoop: 7, stepSize: 1/365/30, name: "weeks per second"},
+                                    {physLoop: 30, stepSize: 1/365/30,    name: "months per second"},
+                                    {physLoop: 52, stepSize: 7/365/30,     name: "years per second"}];
+            main.simSpeed = main.availableSpeeds[3];
       //control variables
             var dragStart = new THREE.Vector3();
             var dragEnd = new THREE.Vector3();
@@ -308,7 +322,6 @@
                 camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100000);
                 camera.position.set(500, -500, 500);
                 camera.up.set( 0, 0, 1 );
-              
                 for (let i in main.bodies) {
                     addToScene(main.bodies[i])
                 }
@@ -392,20 +405,24 @@
 
 
             function physicsTick(){
-                Gravity.calculateGravity(main.bodies);
-                for (let i in main.bodies) {
-                    let body = main.bodies[i];
+                Gravity.step = main.simSpeed.stepSize;
+                for (k=0; k<main.simSpeed.physLoop; k++){
+                  Gravity.calculateGravity(main.bodies);
+                  for (let i in main.bodies) {
+                      let body = main.bodies[i];
 
-                    if (!body.toDestroy) {
-                        let mesh = body.mesh;
-                        let coord = transformInScreenCoord(body.position);
-                        mesh.position.x = coord.x;
-                        mesh.position.y = coord.y;
-                        mesh.position.z = coord.z;
-                    } else {
-                        main.remove(body);
-                    }
+                      if (!body.toDestroy) {
+                          let mesh = body.mesh;
+                          let coord = transformInScreenCoord(body.position);
+                          mesh.position.x = coord.x;
+                          mesh.position.y = coord.y;
+                          mesh.position.z = coord.z;
+                      } else {
+                          main.remove(body);
+                      }
+                  }
                 }
+                
             }
             
             window.addEventListener('resize', onWindowResize, false);
@@ -477,6 +494,10 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
+            
+//             function main.speedChange(){
+//               console.log(main.simSpeed.id);
+//             }
 
         });
   

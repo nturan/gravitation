@@ -8,7 +8,6 @@ https://ssd.jpl.nasa.gov/horizons.cgi
 
 ## ToDo ##
 -Object trajectories
--Move coordinate system center to system barycenter
 -Show speed vector, (partly done)
 -Real radiuses and, Distant Object feature
 -Refractoring(later again)
