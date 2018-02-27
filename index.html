@@ -70,7 +70,7 @@
   </div>
 <div class ="row">
     <label>
-      Radius: <input type="text" ng-model="main.newRadius" placeholder="Radius">
+      Radius: <input type="text" ng-model="main.newRadius" placeholder="Radius"> in km
     </label>
     <label>
       Start velocity: {{main.newVelocity}}
@@ -275,19 +275,19 @@
 
 
             main.bodies = [
-                new Body("Sun", 1.988544E+7, 1, [ 1.488845024691211E-03,  6.381654552143589E-03, -1.126420425735407E-04],
+                new Body("Sun", 1.988544E+7, 695700, [ 1.488845024691211E-03,  6.381654552143589E-03, -1.126420425735407E-04],
                          [-6.208736136983524E-06,  4.640963331504805E-06,  1.483206369475573E-07], 0, 0xffff33),
-                new Body("Mercur", 3.302, 1, [ 3.614665888277512E-01, -7.759810595975869E-02, -3.999904486712141E-02],
+                new Body("Mercur", 3.302, 2440, [ 3.614665888277512E-01, -7.759810595975869E-02, -3.999904486712141E-02],
                          [9.302724436347369E-04,  2.866514843996328E-02,  2.256175303870725E-03], 0),
-                new Body("Venus", 48.685, 1, [ 7.264945036351604E-01, -1.957121171107659E-02, -4.230613854738632E-02],
+                new Body("Venus", 48.685, 6052, [ 7.264945036351604E-01, -1.957121171107659E-02, -4.230613854738632E-02],
                          [6.278768987279022E-04,  2.012552105537308E-02,  2.395645034105181E-04], 0),
-                new Body("Earth", 59.7219, 1, [-8.803257898433657E-01,  4.545130073016067E-01, -1.251704673020013E-04],
+                new Body("Earth", 59.7219, 6371, [-8.803257898433657E-01,  4.545130073016067E-01, -1.251704673020013E-04],
                          [-8.075306082562402E-03, -1.540171441572302E-02,  7.885144556138575E-07], 0, 0x3333ff),
-                new Body("Moon", 734.9E-3, 0.2, [-8.785755476608252E-01, 4.563201901680939E-01,-3.570130251523075E-04],
+                new Body("Moon", 734.9E-3, 1737, [-8.785755476608252E-01, 4.563201901680939E-01,-3.570130251523075E-04],
                          [-8.521922410260499E-03,-1.500283383979852E-02, 4.311910684926032E-06], 0),
-                new Body("Mars", 6.4185, 1, [-1.239873336202447E+00, -9.703030342552387E-01,  9.886664338815770E-03],
+                new Body("Mars", 6.4185, 3390, [-1.239873336202447E+00, -9.703030342552387E-01,  9.886664338815770E-03],
                          [9.171402633791702E-03, -9.796767140104022E-03, -4.304586786898006E-04], 0, 0xff3333),
-                new Body("Jupiter", 18981.3, 1, [-4.010558503618121E+00, -3.641925022005197E+00,  1.048122707815689E-01],
+                new Body("Jupiter", 18981.3, 69911, [-4.010558503618121E+00, -3.641925022005197E+00,  1.048122707815689E-01],
                          [4.983260657384969E-03, -5.227190479466572E-03, -8.978151110962477E-05], 0)];
 
             main.add = function () {
@@ -304,26 +304,20 @@
             };
 
             function addToScene(body) {
-                let geometry = new THREE.IcosahedronGeometry(1, 2);
+                let geometry = new THREE.IcosahedronGeometry(body.radius, 2);
                 let material = new THREE.MeshPhongMaterial({
                     color: body.color,
                     emissive: 0x072534,
-                    side: THREE.DoubleSide,
-                    shading: THREE.FlatShading
+                    side: THREE.DoubleSide
                 });
                 body.mesh = new THREE.Object3D();
                 // just for white lines on a body. could be just body.mesh = new THREE.Mesh(geometry, material);
-                body.mesh.add(new THREE.LineSegments(
-                    new THREE.WireframeGeometry(geometry),
-
-                    new THREE.LineBasicMaterial({
-                        color: 0xffffff,
-                        transparent: true,
-                        opacity: 0.5
-                    })
-                ));
+                body.mesh.add(new THREE.LineSegments(new THREE.WireframeGeometry(geometry),
+                                                     new THREE.LineBasicMaterial({color: 0xffffff,
+                                                                                  transparent: true,
+                                                                                  opacity: 0.5})));
                 body.mesh.add(new THREE.Mesh(geometry, material));
-
+                
                 body.mesh.name = body.name;
                 scene.add(body.mesh);
 
@@ -341,7 +335,7 @@
             function init() {
 
                 scene = new THREE.Scene();
-                camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100000);
+                camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.001, 100000);
                 camera.position.set(500, -500, 500);
                 
                 main.simSpeed = main.availableSpeeds[3];
@@ -421,12 +415,32 @@
                     controls.enabled = true;
                     controls.update();
                 }
-
+                
+                distantObjectIndication();
                 if (main.bodiesListShown && apply)
                     $scope.$apply();
                 renderer.render(scene, camera);
             }
 
+      
+            function distantObjectIndication(){
+              for (let i in main.bodies){
+                let body = main.bodies[i];
+                let coord = transformInScreenCoord(body.position);
+                let distVec = [coord.x - camera.position.x,
+                               coord.y - camera.position.y,
+                               coord.z - camera.position.z];
+                let distMag = Gravity.magnitudeVec3(distVec);
+                let scaleFaktor = 2/body.mesh.children[1].geometry.parameters.radius;
+                if (distMag>100){
+                  body.mesh.scale.set(scaleFaktor, scaleFaktor, scaleFaktor);
+                }else if (distMag > 30 && body.name != "Sun"){
+                  body.mesh.scale.set(scaleFaktor/10, scaleFaktor/10, scaleFaktor/10);
+                }else {
+                  body.mesh.scale.set(1, 1, 1);
+                }
+              }
+            }
 
             function updateTraj(){
               for (let i in main.bodies){
@@ -442,7 +456,7 @@
                   let trajCurve = new THREE.CatmullRomCurve3( traj );
                   var trajPoints = trajCurve.getPoints( trajLength );
                   var trajGeometry = new THREE.BufferGeometry().setFromPoints( trajPoints );
-                  var trajMaterial = new THREE.LineBasicMaterial( body.color );
+                  var trajMaterial = new THREE.LineBasicMaterial( {color: 0xffffff} );
                   let trajObj = body.trajObj;
                   scene.remove(trajObj);
                   trajObj = new THREE.Line( trajGeometry, trajMaterial );

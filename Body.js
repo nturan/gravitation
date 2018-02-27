@@ -3,10 +3,10 @@ class Body {
     constructor(name, mass, radius,
                 position, velocity, acceleration = 0.0,
                 color = 0xffffff, toDestroy = false,
-								traj=[], trajObj=null) {
+								traj=[], trajObj=null, mesh=null) {
         this.name = name;
         this.mass = mass/18981.3;
-        this.radius = radius;
+        this.radius = radius*1E-6;//0.01AU = km*1E-6
         this.position = position;
 				velocity[0] = velocity[0]*365.25;
 				velocity[1] = velocity[1]*365.25;
@@ -17,6 +17,7 @@ class Body {
         this.toDestroy = toDestroy;
 				this.traj = traj;
 				this.trajObj = trajObj;
+				this.mesh = mesh;
     }
 
     formatPosition() {

@@ -8,5 +8,4 @@ https://ssd.jpl.nasa.gov/horizons.cgi
 
 ## ToDo ##
 -Show speed vector, (partly done)
--Real radiuses and, Distant Object feature
 -Refractoring(later again)
