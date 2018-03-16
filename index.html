@@ -48,11 +48,38 @@
 
         td {
             padding: 5px;
+            width: 10%;
+            height: 25px;
         }
 
         tbody tr:hover {
             background-color: gray;
             cursor: pointer;
+        }
+        #table-wrapper {
+          position:relative;
+        }
+        #table-scroll {
+          height:200px;
+          overflow:auto;  
+          margin-top:20px;
+        }
+        #table-wrapper table {
+          width:100%;
+
+        }
+        #table-wrapper table * {
+/*           background:yellow;
+          color:black; */
+        }
+        #table-wrapper table thead th .text {
+          position:absolute;   
+          top:-20px;
+/*           z-index:2; */
+          text-align: center;
+          height:30px;
+/*           width:100%; */
+/*           border:1px solid red; */
         }
     </style>
 </head>
@@ -115,24 +142,26 @@
 <div id="bodies-list" class="gui">
     <button ng-click="main.toggleBodiesList()">Toggle List</button>
     <div ng-show="main.bodiesListShown">
+    <div id="table-wrapper">
+      <div id="table-scroll">
         <table>
             <thead>
             <tr>
-                <th>Name</th>
-                <th>Mass</th>
-                <th>Radius</th>
-                <th>Position (x,y,z)</th>
-                <th>Velocity (x,y,z)</th>
-                <th>Acceleration (x, y, z)</th>
-                <th>Color</th>
+                <th><span class="text">Name</span></th>
+                <th><span class="text">Mass</span></th>
+                <th><span class="text">Radius</span></th>
+                <th><span class="text">Position (x,y,z)</span></th>
+                <th><span class="text">Velocity (x,y,z)</span></th>
+                <th><span class="text">Acceleration (x, y, z)</span></th>
+                <th><span class="text">Color</span></th>
                 <th></th>
             </tr>
             </thead>
             <tbody>
             <tr ng-repeat="body in main.bodies" ng-click="main.track(body)">
                 <td>{{body.name}}</td>
-                <td>{{body.mass}}</td>
-                <td>{{body.radius}}</td>
+                <td>{{body.mass.toFixed(2)}}</td>
+                <td>{{body.radius.toFixed(2)}}</td>
                 <td>({{body.formatPosition()}})</td>
                 <td>({{body.formatVelocity()}})</td>
                 <td>({{body.formatAcceleration()}})</td>
@@ -143,6 +172,8 @@
             </tr>
             </tbody>
         </table>
+        </div>
+      </div>
     </div>
 </div>
   
