@@ -13,7 +13,7 @@ Gravity = {
             let r_i = body_i.position;
             let a_i = [0, 0, 0];
 						let distCent = Gravity.magnitudeVec3(r_i);
-						if (distCent>50){
+						if (distCent>100){
 								bodies[i].toDestroy = true;
 								}
             for (let j = 0; j < n; j++) {
