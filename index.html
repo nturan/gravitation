@@ -108,6 +108,9 @@
 </div>
 <div id="menu" class="gui">
     <div class='row'>
+      See the article to get more information...  
+    </div>
+    <div class='row'>
         <label>
             <input type="checkbox" ng-model="main.showAxes" ng-change="main.toggleAxes()">
             Toggle Axes
@@ -160,8 +163,8 @@
             <tbody>
             <tr ng-repeat="body in main.bodies" ng-click="main.track(body)">
                 <td>{{body.name}}</td>
-                <td>{{body.mass.toFixed(2)}}</td>
-                <td>{{body.radius.toFixed(2)}}</td>
+                <td>{{body.mass.toFixed(8)}}</td>
+                <td>{{body.radius.toFixed(5)}}</td>
                 <td>({{body.formatPosition()}})</td>
                 <td>({{body.formatVelocity()}})</td>
                 <td>({{body.formatAcceleration()}})</td>
