@@ -3,85 +3,20 @@
 <head>
     <title>Gravitation</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" 
+          content="width=device-width, 
+                   user-scalable=no, 
+                   minimum-scale=1.0, 
+                   maximum-scale=1.0">
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/5.4.0/math.min.js"></script>
     <script src="Body.js"></script>
     <script src="Ephemeris.js"></script>
     <script src="../resources/three.min.js"></script>
     <script src="../resources/OrbitControls.js"></script>
+    <script src="../resources/integrator.js"></script> 
     <script src="Gravity.js"></script>
-    <style type="text/css">
-        body {
-            margin: 0;
-        }
-
-        #menu {
-            top: 10px;
-            right: 10px;
-        }
-
-        #bodies-list {
-            bottom: 10px;
-            right: 10px;
-        }
-
-        .gui {
-            padding: 10px;
-            position: absolute;
-            color: white;
-            opacity: 0.2;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        .gui:hover {
-            opacity: 1;
-            transition: none;
-        }
-
-        .row {
-            margin-bottom: 10px;
-        }
-
-        .vector input {
-            width: 50px;
-        }
-
-        td {
-            padding: 5px;
-            width: 10%;
-            height: 25px;
-        }
-
-        tbody tr:hover {
-            background-color: gray;
-            cursor: pointer;
-        }
-        #table-wrapper {
-          position:relative;
-        }
-        #table-scroll {
-          height:200px;
-          overflow:auto;  
-          margin-top:20px;
-        }
-        #table-wrapper table {
-          width:100%;
-
-        }
-        #table-wrapper table * {
-/*           background:yellow;
-          color:black; */
-        }
-        #table-wrapper table thead th .text {
-          position:absolute;   
-          top:-20px;
-/*           z-index:2; */
-          text-align: center;
-          height:30px;
-/*           width:100%; */
-/*           border:1px solid red; */
-        }
-    </style>
+    <link rel="stylesheet" href="style.css?v=123">
 </head>
 <body ng-controller="MainController as main">
 
@@ -102,13 +37,15 @@
     </label>
     <label>
       Start velocity: {{main.newVelocity.toFixed(2)}}
-       in AU/year
+       in <a 
+href="https://en.wikipedia.org/wiki/Astronomical_unit"
+target="_blank">AU</a> per year
     </label>
   </div>
 </div>
 <div id="menu" class="gui">
     <div class='row'>
-      See the article to get more information...  
+      See the <a href="article.html">article</a> to get more information...  
     </div>
     <div class='row'>
         <label>
@@ -150,14 +87,22 @@
       <table>
         <thead>
           <tr>
-            <th><span class="text">Name</span></th>
-            <th><span class="text">Mass</span></th>
-            <th><span class="text">Radius</span></th>
-            <th><span class="text">Position (x,y,z)</span></th>
-            <th><span class="text">Velocity (x,y,z)</span></th>
-            <th><span class="text">Acceleration (x, y, z)</span></th>
-            <th><span class="text">Color</span></th>
-            <th></th>
+            <th align="left"><span class="text">Name</span></th>
+            <th align="left"><span class="text">Mass</span></th>
+            <th align="left"><span class="text">Radius</span></th>
+            <th align="left"><span class="text">Position (x,y,z)</span></th>
+            <th align="left"><span class="text">Velocity magnitude</span></th>
+            <th width="150px"></th>
+          </tr>
+          <tr>
+            <td></td>
+            <td><i>in Jupiters mass</i></td>
+            <td><i>in <a 
+href="https://en.wikipedia.org/wiki/Astronomical_unit"
+target="_blank">AU</a></i></td>
+            <td><i>in AU</i></td>
+            <td><i>in AU per year</i></td>
+            <td></td>
           </tr>
         </thead>
         <tbody>
@@ -166,9 +111,7 @@
             <td>{{body.mass.toFixed(8)}}</td>
             <td>{{body.radius.toFixed(5)}}</td>
             <td>({{body.formatPosition()}})</td>
-            <td>({{body.formatVelocity()}})</td>
-            <td>({{body.formatAcceleration()}})</td>
-            <td><span style="color: #{{body.color.toString(16)}}">#{{body.color.toString(16)}}</span></td>
+            <td>{{body.formatVelocity()}}</td>
             <td>
               <button ng-click="main.remove(body)">Remove</button>
             </td>

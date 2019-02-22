@@ -1,0 +1,30 @@
+<head>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+<h1>Simulation of our Solar System</h1>
+*<i>go <a href="index.html">back</a> to simulation</i>
+
+<h2>What is it?</h2>
+In this program we simulate the motion of 22 celestial objects in our solar
+system. This includes the Sun, planets and some of their natural satellites. 
+The initial position and velocity data (Ephemeris) are being loaded from 
+NASA's HORIZONS telnet server. You can visit the 
+<a href="https://ssd.jpl.nasa.gov/horizons.cgi">web interface</a> of this 
+service to get an idea what that is.  After initial positions are loaded,
+a runge-kutta-4 integrator is used to solve the differential equation of 
+motion, Newton's universal gravitational law.  Here is the overview of the 
+features:
+<ul>
+  <li><a href="#">variable simulation speed</a></li>
+  <li><a href="#">posibility add new objects to the system on the run</a></li>
+  <li><a href="#">distant object indication</a></li>
+  <li><a href="#">displaying past object trajectory</a></li>
+  <li><a href="#">camera tracking objects</a></li>
+  <li><a href="#">posibility to improve or change integrator</a></li>
+</ul>
+<h2>Physical Background</h2>
+Newton's universial gravitational law between bodies \( i \) and \( j \) 
+can be written as follows:
+\[ \vec{F}_{ij} = G \frac{ m_i m_j (\vec{x}_j - \vec{x}_i) }{
+                          |\vec{x}_j - \vec{x}_i|^3}. \]
+Hier \( \vec{F}_{ij} \) is the force on the body \( i \).  \( G=6.67\times 10^{-11} m^3 kg^{-1}s^{-2} \) is the gravitational constant. 
