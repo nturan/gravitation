@@ -163,8 +163,10 @@ angular.module('gravitationApp', []).controller('MainController',
 
   function addToScene(body) {
     let geometry = new THREE.IcosahedronGeometry(body.radius, 2);
+    var moonTexture = THREE.ImageUtils.loadTexture( 'moon.jpg' );
     let material = new THREE.MeshPhongMaterial({
-                    color: body.color, emissive: 0x072534
+                    color: body.color, emissive: 0x072534,
+                    map: moonTexture
                     });
     body.mesh = new THREE.Object3D();
     body.mesh.add(new THREE.Mesh(geometry, material));
