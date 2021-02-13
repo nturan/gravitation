@@ -60,7 +60,7 @@ angular.module('gravitationApp', []).controller('MainController',
                                color: 0x000000,
                                emissive: 0x072534,
                                side: THREE.DoubleSide,
-                               shading: THREE.FlatShading})));
+                               flatShading: true})));
   newBody.add(speedArrow);
       
   //axis
@@ -163,7 +163,9 @@ angular.module('gravitationApp', []).controller('MainController',
 
   function addToScene(body) {
     let geometry = new THREE.IcosahedronGeometry(body.radius, 2);
-    var moonTexture = THREE.ImageUtils.loadTexture( 'moon.jpg' );
+    const surface_loader = new THREE.TextureLoader();
+    const moonTexture = surface_loader.load("moon.jpg");
+//    var moonTexture = THREE.ImageUtils.loadTexture( 'moon.jpg' );
     let material = new THREE.MeshPhongMaterial({
                     color: body.color, emissive: 0x072534,
                     map: moonTexture
@@ -176,7 +178,6 @@ angular.module('gravitationApp', []).controller('MainController',
                     new THREE.IcosahedronGeometry(5, 2),
                     new THREE.MeshBasicMaterial({
                       color: body.color,
-                      emisive: body.color,
                       opacity: 0.1,
                       transparent:  true}  )));                
     body.mesh.name = body.name;
