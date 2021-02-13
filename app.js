@@ -1,6 +1,7 @@
 import {Body, Ephemeris} from "./Body.js";
 import * as THREE from "https://unpkg.com/three/build/three.module.js";
 import { OrbitControls } from 'https://unpkg.com/three/examples/jsm/controls/OrbitControls.js';
+import {Gravity} from "./Gravity.js"
 
 angular.module('gravitationApp', []).controller('MainController', 
                                                 function ($scope) {
@@ -9,37 +10,15 @@ angular.module('gravitationApp', []).controller('MainController',
   
   let main = this;
   let scene, camera, renderer, controls;
-  main.availableSpeeds = [{physLoop: 1,  
-                           stepSize: 1/365/30/24/60/60, 
-                           name: "seconds per second"},
-                          {physLoop: 1,  
-                           stepSize: 1/365/30/24/60, 
-                           name: "minutes per second"},
-                          {physLoop: 1, 
-                           stepSize: 1/365/30/24, 
-                           name: "hours per second"},
-                          {physLoop: 1, 
-                           stepSize: 1/365/30,    
-                           name: "days per second"},
-                          {physLoop: 1,  
-                           stepSize: 1/365/30*7,       
-                           name: "weeks per second"},
-                          {physLoop: 1, 
-                           stepSize: 1/365,       
-                           name: "months per second"},
-                          {physLoop: 52, 
-                           stepSize: 7/365/30,       
-                           name: "years per second"}];
+  main.availableSpeeds = Gravity.availableSpeeds;
   //control variables
   var dragStart = new THREE.Vector3();
   var dragEnd = new THREE.Vector3();
   var dragVector = new THREE.Vector3();
   main.mouseDrag = false;
-  let pauseSim = false;
   main.bodiesListShown = false;
   main.showTraj = true;
   let mouse = new THREE.Vector2();
-  let indicateDistantObjects = true;
   //time control variables
   let startCounter = new Date().getTime();
   let frmTime = startCounter;
@@ -115,11 +94,11 @@ angular.module('gravitationApp', []).controller('MainController',
   main.createBody = function () {
     if(main.creation){
       main.creation = false;
-      pauseSim = false;
+      Gravity.pause_simulation = false;
       scene.remove(newBody);
     }else{
       main.creation = true;
-      pauseSim = true;
+      Gravity.pause_simulation = true;
       newBody.position.x = 0.0;
       newBody.position.y = 0.0;
       newBody.position.z = 0.0;
@@ -129,10 +108,10 @@ angular.module('gravitationApp', []).controller('MainController',
   };
       
   this.togglePause = function () {
-      if (pauseSim && !main.creation)
-          pauseSim = false;
+      if (Gravity.pause_simulation && !main.creation)
+          Gravity.pause_simulation = false;
       else
-          pauseSim = true;
+          Gravity.pause_simulation = true;
   };
 
   main.newName = 'New';
@@ -147,70 +126,15 @@ angular.module('gravitationApp', []).controller('MainController',
   main.newAcceleration = 0;
   main.newColor = 'ffffff';
 
-  //initializing bodies, file Ephemeris.js is created by python code
   main.bodies = Ephemeris.bodies;
 
   let sun = main.bodies[0];
-  let sunLight;
-  main.add = function () {
-    let color = parseInt('0x' + main.newColor);
-    let body = new Body(main.newName, 
-                        main.newMass, 
-                        main.newRadius, 
-                        {x: main.newPositionX, 
-                         y: main.newPositionY, 
-                         z: main.newPositionX}, 
-                        {x: main.newVelocityX, 
-                         y: main.newVelocityY, 
-                         z: main.newVelocityZ}, 
-                        main.newAcceleration, 
-                        color);
-    main.bodies.push(body);
-    addToScene(body);
-  };
 
   main.remove = function (body) {
     let i = main.bodies.indexOf(body);
     scene.remove(body.mesh);
     main.bodies.splice(i, 1);
   };
-
-  function addToScene(body) {
-    let geometry = new THREE.IcosahedronGeometry(body.radius, 2);
-    const surface_loader = new THREE.TextureLoader();
-    const moonTexture = surface_loader.load("moon.jpg");
-//    var moonTexture = THREE.ImageUtils.loadTexture( 'moon.jpg' );
-    let material = new THREE.MeshPhongMaterial({
-                    color: body.color, emissive: 0x072534,
-                    map: moonTexture
-                    });
-    body.mesh = new THREE.Object3D();
-    body.mesh.add(new THREE.Mesh(geometry, material));
-
-    //indicator at distance
-    body.mesh.add(new THREE.Mesh(
-                    new THREE.IcosahedronGeometry(5, 2),
-                    new THREE.MeshBasicMaterial({
-                      color: body.color,
-                      opacity: 0.1,
-                      transparent:  true}  )));                
-    body.mesh.name = body.name;
-    if(body.name == "Saturn"){
-      let saturnRadius = body.mesh.children[0].geometry.parameters.radius;
-      let ring = new THREE.TorusGeometry(saturnRadius*1.5, 1.3E-2, 20, 20);
-      ring.scale(1, 1, 0.2);
-      ring.lookAt(new THREE.Vector3(0.3, 0.3, 1.5));
-      body.mesh.add(new THREE.Mesh(ring, new THREE.MeshBasicMaterial(
-      {color: body.color})));
-    }
-    scene.add(body.mesh);
-
-    let coord = transformInScreenCoord(body.position);
-    body.mesh.position.x = coord.x;
-    body.mesh.position.y = coord.y;
-    body.mesh.position.z = coord.z;
-
- }
 
  main.track = function (body) {
    main.tracking = body;
@@ -232,17 +156,9 @@ angular.module('gravitationApp', []).controller('MainController',
                 
     main.simSpeed = main.availableSpeeds[3];
     camera.up.set( 0, 0, 1 );
-    updateColors();
     for (let i in main.bodies) {
-      addToScene(main.bodies[i])
+      scene.add(main.bodies[i].mesh);
     }
-    //Lights
-    sunLight = new THREE.PointLight(0xffaaaa, 5, 0, 0);
-    sunLight.position.set(sun.mesh.position.x, 
-                          sun.mesh.position.y, 
-                          sun.mesh.position.z);
-    // sunLight.color.setHSL( 0.55, 0.9, 0.5 );
-    scene.add(sunLight);
     let light2 = new THREE.AmbientLight(0x333333);
     scene.add(light2);                
     renderer = new THREE.WebGLRenderer({antialias: true});
@@ -253,6 +169,16 @@ angular.module('gravitationApp', []).controller('MainController',
     controls.enableDamping = true;
 //    controls.dampingFactor = 1;
     // controls.enableZoom = true;
+
+    const loader = new THREE.TextureLoader();
+    const texture = loader.load(
+      'resources/2k_stars_milky_way.jpg',
+      () => {
+        const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+        rt.fromEquirectangularTexture(renderer, texture);
+        scene.background = rt;
+      });
+
     main.tracking = null;
   }
 
@@ -270,12 +196,9 @@ angular.module('gravitationApp', []).controller('MainController',
       frmCounter++;
     }
                 
-    if(phsTime - phsStart>= phsCycle && !pauseSim){
+    if(phsTime - phsStart>= phsCycle && !Gravity.pause_simulation){
       phsStart = new Date().getTime();
-      physicsTick();
-      sunLight.position.set(sun.mesh.position.x, 
-                            sun.mesh.position.y, 
-                            sun.mesh.position.z);
+      physicsTick();;
     }
 
 
@@ -308,8 +231,9 @@ angular.module('gravitationApp', []).controller('MainController',
         controls.enabled = true;
         controls.update();
     }
-                
-    distantObjectIndication();
+    if (main.tracking != null){
+      //distantObjectIndication();
+    }          
     if (main.bodiesListShown && apply){
       $scope.$apply();
     }
@@ -323,9 +247,9 @@ angular.module('gravitationApp', []).controller('MainController',
       let distMag = new THREE.Vector3()
         .subVectors(coord, camera.position).length();
       if (distMag>100){
-        indicateDistantObjects = true;
+        Gravity.indicate_distant_objects = true;
       }else {
-        indicateDistantObjects = false;
+        Gravity.indicate_distant_objects = false;
 	break;
       }
     }
@@ -356,7 +280,6 @@ angular.module('gravitationApp', []).controller('MainController',
       
       
   function physicsTick(){
-    Gravity.step = main.simSpeed.stepSize;
     if(main.showTraj){
       if(trajUpdateCounter > trajUpdateFreq){
         updateTraj();
@@ -365,31 +288,24 @@ angular.module('gravitationApp', []).controller('MainController',
         trajUpdateCounter++;
       }
     }
-    for (let k=0; k<main.simSpeed.physLoop; k++){
-      
-      Gravity.ApplyGravity(main.bodies);
-      for (let i in main.bodies) {
-        let body = main.bodies[i];
-        if(!indicateDistantObjects){
-          body.mesh.children[1].visible = false;
-        }else{
-          body.mesh.children[1].visible = true;
-        }
-        if (!body.toDestroy) {
-          let mesh = body.mesh;
-          body.physics_body.UpdatePositionalState(0.0, main.simSpeed.stepSize);
-          body.position = body.physics_body.position;
-          body.velocity = body.physics_body.velocity;
-          let coord = transformInScreenCoord(body.position);
-          mesh.position.copy(coord);
-          //mesh.position.x = coord.x;
-          //mesh.position.y = coord.y;
-          //mesh.position.z = coord.z;
-        } else {
-          main.remove(body);
-        }
+    Gravity.ApplyGravity(main.bodies);
+    for (let i in main.bodies) {
+      let body = main.bodies[i];
+      if(!Gravity.indicate_distant_objects){
+        body.mesh.children[1].visible = false;
+      }else{
+        body.mesh.children[1].visible = true;
       }
-    }               
+      if (!body.toDestroy) {
+        body.physics_body.UpdatePositionalState(0.0, main.simSpeed.stepSize);
+        body.position = body.physics_body.position;
+        body.velocity = body.physics_body.velocity;
+        let coord = transformInScreenCoord(body.position);
+        body.mesh.position.copy(coord);
+      } else {
+        main.remove(body);
+      }
+    }                   
   }
             
   window.addEventListener('resize', onWindowResize, false);
@@ -446,7 +362,7 @@ angular.module('gravitationApp', []).controller('MainController',
         main.mouseDrag = false;
         if(main.creation){
           main.creation = false;
-          pauseSim = false;
+          Gravity.pause_simulation = false;
           let newPlanet = new Body(main.newName, main.newMass, main.newRadius,
                         {x: newBody.position.x / 100, 
                          y: newBody.position.y / 100, 
@@ -455,7 +371,7 @@ angular.module('gravitationApp', []).controller('MainController',
                          y: dragVector.y / 3652.5, 
                          z: dragVector.z / 3652.5});
           main.bodies.push(newPlanet);
-          addToScene(newPlanet);
+          scene.add(newPlanet.mesh);
           scene.remove(newBody);
         }
         break;
@@ -468,38 +384,7 @@ angular.module('gravitationApp', []).controller('MainController',
     renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  function updateColors(){
-  //starColor = ['0xfff98e']
-  // mercur, venus, earth, mars, jupiter, saturn, uranus, neptune, pluto
-  //planetsColor = ['0x8C8A8C', '0xCDC9C3', '0x0085AB', '0xD76720', '0xD5B67B',
-  //'0xB5976B', '0x51E6EA', '0x015596', '0xC4A087']
-    for (let i in main.bodies){
-      let body = main.bodies[i];
-      if(body.name=="Sun"){
-        body.color = 0xfff98e;
-      }else if(body.name=="Mercur"){
-        body.color = 0x8c8a8c;
-      }else if(body.name=="Venus"){
-        body.color = 0xEFE16C;
-      }else if(body.name=="Earth"){
-        body.color = 0x0085ab;
-      }else if(body.name=="Mars"){
-        body.color = 0xd76720;
-      }else if(body.name=="Jupiter"){
-        body.color = 0xd5b67b;
-      }else if(body.name=="Saturn"){
-        body.color = 0xb5976b;
-      }else if(body.name=="Uranus"){
-        body.color = 0x51e6ea;
-      }else if(body.name=="Neptune"){
-        body.color = 0x015596;
-      }else if(body.name=="Pluto"){
-        body.color = 0xc4a087;
-      }else if(body.name=="Moon"){
-        body.color = 0x4E4D4D;
-      }
-    }
-  }
+  
 });
   
 function pickVector3FromScene(plane, mouse, camera) {

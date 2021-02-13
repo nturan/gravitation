@@ -1,4 +1,5 @@
 import {PhysicsBody} from "./physics_engine/physics_body.js";
+import * as THREE from "https://unpkg.com/three/build/three.module.js";
 
 class Body {
   constructor(name, mass, radius,
@@ -19,7 +20,26 @@ class Body {
     this.toDestroy = toDestroy;
     this.traj = traj;
     this.trajObj = trajObj;
-    this.mesh = mesh;
+
+
+    //construct mesh for the celestial body
+    let geometry = new THREE.IcosahedronGeometry(this.radius, 2);
+    let material = new THREE.MeshPhongMaterial({
+      color: this.color, emissive: 0x072534
+      });
+    this.mesh = new THREE.Object3D();
+    this.mesh.add(new THREE.Mesh(geometry, material));
+    this.mesh.add(new THREE.Mesh(
+      new THREE.IcosahedronGeometry(5, 2),
+      new THREE.MeshBasicMaterial({
+        color: this.color,
+        opacity: 0.9,
+        transparent:  true}  )));
+    let coord = this.TransformInScreenCoord(this.position);
+    this.mesh.position.x = coord.x;
+    this.mesh.position.y = coord.y;
+    this.mesh.position.z = coord.z;
+    this.mesh.name = this.name;
   }
 
 
@@ -52,6 +72,10 @@ class Body {
       [0, 0, moment_of_inertia_sphere]]);
   }
 
+  TransformInScreenCoord(r, scale=100) {
+    return new THREE.Vector3(r.x*scale, r.y*scale, r.z*scale);
+  }
+
   static humanizeFloat(x, n=2) {
     if(x)
         return x.toFixed(n);//.replace(/\.?0*$/, '');
@@ -62,12 +86,27 @@ class Body {
 
 }
 
+let sun = new Body("Sun",19885440.0,695500.0,
+{x: -1.139090933890510E-03 , y: 7.513548470174963E-03 ,z: -4.751221261400040E-05},
+{x: -8.103340265234835E-06 , y: 1.531073076683503E-06 ,z:  2.093972966295105E-07});
+let sun_mesh = sun.mesh;
+let sun_mesh_position = sun_mesh.position;
+let sun_light = new THREE.PointLight(0xffaaaa, 5, 0, 2);
+sun_light.position.set(sun_mesh.position.x, 
+                       sun_mesh.position.y, 
+                       sun_mesh.position.z);
+sun_light.color.setHSL( 0.55, 0.9, 0.5 );
+sun.mesh = new THREE.Group();
+sun.mesh.position.copy(sun_mesh_position);
+sun_mesh.position.x = 0.0;
+sun_mesh.position.y = 0.0;
+sun_mesh.position.z = 0.0;
+sun.mesh.add(sun_mesh);
+sun.mesh.add(sun_light);
+
 
 let Ephemeris = {bodies : [
-  new Body("Sun",19885440.0,695500.0,
-  {x: -1.139090933890510E-03 , y: 7.513548470174963E-03 ,z: -4.751221261400040E-05},
-  {x: -8.103340265234835E-06 , y: 1.531073076683503E-06 ,z:  2.093972966295105E-07})
- ,new Body("Mercur",3.302,2440,
+  sun, new Body("Mercur",3.302,2440,
  { x: 2.712325922922563E-01 , y: 1.819716677932228E-01 , z: -1.077866088275325E-02},
  { x:-2.069213447486702E-02 , y: 2.492058633634082E-02 , z:  3.933933861696485E-03})
  ,new Body("Venus",48.685,6052,
