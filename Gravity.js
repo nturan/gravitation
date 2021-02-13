@@ -10,12 +10,12 @@ Gravity = {
     let stateVector = []
     let masses = []
     for (let i = 0; i<n; i++){
-      stateVector.push(bodies[i].position[0]);
-      stateVector.push(bodies[i].position[1]);
-      stateVector.push(bodies[i].position[2]);
-      stateVector.push(bodies[i].velocity[0]);
-      stateVector.push(bodies[i].velocity[1]);
-      stateVector.push(bodies[i].velocity[2]);
+      stateVector.push(bodies[i].state_vector[0]);
+      stateVector.push(bodies[i].state_vector[1]);
+      stateVector.push(bodies[i].state_vector[2]);
+      stateVector.push(bodies[i].state_vector[3]);
+      stateVector.push(bodies[i].state_vector[4]);
+      stateVector.push(bodies[i].state_vector[5]);
       masses.push(bodies[i].mass);
     }
 //    console.log(stateVector);
@@ -43,6 +43,13 @@ Gravity = {
       body.position[0] -= barycenter[0];
       body.position[1] -= barycenter[1];
       body.position[2] -= barycenter[2];
+
+      body.state_vector[0] = body.position[0];
+      body.state_vector[1] = body.position[1];
+      body.state_vector[2] = body.position[2];
+      body.state_vector[3] = body.velocity[0];
+      body.state_vector[4] = body.velocity[1];
+      body.state_vector[5] = body.velocity[2];
     }
   },
 

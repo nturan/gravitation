@@ -12,6 +12,13 @@ class Body {
     velocity[1] = velocity[1]*365.25;
     velocity[2] = velocity[2]*365.25;
     this.velocity = velocity;
+    this.state_vector = [
+      this.position[0],
+      this.position[1],
+      this.position[2],
+      this.velocity[0],
+      this.velocity[1],
+      this.velocity[2]];
     this.color = color;
     this.acceleration = acceleration;
     this.toDestroy = toDestroy;
