@@ -146,12 +146,12 @@ angular.module('gravitationApp', []).controller('MainController',
     let body = new Body(main.newName, 
                         main.newMass, 
                         main.newRadius, 
-                        [main.newPositionX, 
-                         main.newPositionY, 
-                         main.newPositionX], 
-                        [main.newVelocityX, 
-                         main.newVelocityY, 
-                         main.newVelocityZ], 
+                        {x: main.newPositionX, 
+                         y: main.newPositionY, 
+                         z: main.newPositionX}, 
+                        {x: main.newVelocityX, 
+                         y: main.newVelocityY, 
+                         z: main.newVelocityZ}, 
                         main.newAcceleration, 
                         color);
     main.bodies.push(body);
@@ -343,6 +343,7 @@ angular.module('gravitationApp', []).controller('MainController',
       
   function physicsTick(){
     Gravity.step = main.simSpeed.stepSize;
+    Gravity.ApplyGravity(main.bodies);
     if(main.showTraj){
       if(trajUpdateCounter > trajUpdateFreq){
         updateTraj();
@@ -428,12 +429,12 @@ angular.module('gravitationApp', []).controller('MainController',
           main.creation = false;
           pauseSim = false;
           let newPlanet = new Body(main.newName, main.newMass, main.newRadius,
-                        [newBody.position.x / 100, 
-                         newBody.position.y / 100, 
-                         newBody.position.z / 100],
-                        [dragVector.x / 3652.5, 
-                         dragVector.y / 3652.5, 
-                         dragVector.z / 3652.5], 0, 0x00ff00);
+                        {x: newBody.position.x / 100, 
+                         y: newBody.position.y / 100, 
+                         z: newBody.position.z / 100},
+                        {x: dragVector.x / 3652.5, 
+                         y: dragVector.y / 3652.5, 
+                         z: dragVector.z / 3652.5}, 0, 0x00ff00);
           main.bodies.push(newPlanet);
           addToScene(newPlanet);
           scene.remove(newBody);
@@ -495,7 +496,7 @@ function pickVector3FromScene(plane, mouse, camera) {
 }
   
 function transformInScreenCoord(r, scale=100) {
-  return new THREE.Vector3(r[0]*scale, r[1]*scale, r[2]*scale);
+  return new THREE.Vector3(r.x*scale, r.y*scale, r.z*scale);
 }
 
 
