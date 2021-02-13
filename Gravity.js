@@ -40,9 +40,11 @@ Gravity = {
           a_i[2] += a_ij[2];
         }
       }
-      bodies[i].total_force[0] += a_i[0]*masses[i];
-      bodies[i].total_force[1] += a_i[1]*masses[i];
-      bodies[i].total_force[2] += a_i[2]*masses[i];
+      bodies[i].physics_body.ApplyForce({
+        x: a_i[0]*masses[i],
+        y: a_i[1]*masses[i],
+        z: a_i[2]*masses[i]
+      });
     }
   },
 

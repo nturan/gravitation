@@ -1,5 +1,12 @@
+import {Body, Ephemeris} from "./Body.js";
+import * as THREE from "https://unpkg.com/three/build/three.module.js";
+import { OrbitControls } from 'https://unpkg.com/three/examples/jsm/controls/OrbitControls.js';
+
 angular.module('gravitationApp', []).controller('MainController', 
                                                 function ($scope) {
+  
+  
+  
   let main = this;
   let scene, camera, renderer, controls;
   main.availableSpeeds = [{physLoop: 1,  
@@ -8,17 +15,17 @@ angular.module('gravitationApp', []).controller('MainController',
                           {physLoop: 1,  
                            stepSize: 1/365/30/24/60, 
                            name: "minutes per second"},
-                          {physLoop: 60, 
-                           stepSize: 1/365/30/24/60, 
+                          {physLoop: 1, 
+                           stepSize: 1/365/30/24, 
                            name: "hours per second"},
-                          {physLoop: 24, 
-                           stepSize: 1/365/30/24,    
+                          {physLoop: 1, 
+                           stepSize: 1/365/30,    
                            name: "days per second"},
-                          {physLoop: 7,  
-                           stepSize: 1/365/30,       
+                          {physLoop: 1,  
+                           stepSize: 1/365/30*7,       
                            name: "weeks per second"},
-                          {physLoop: 30, 
-                           stepSize: 1/365/30,       
+                          {physLoop: 1, 
+                           stepSize: 1/365,       
                            name: "months per second"},
                           {physLoop: 52, 
                            stepSize: 7/365/30,       
@@ -113,7 +120,10 @@ angular.module('gravitationApp', []).controller('MainController',
     }else{
       main.creation = true;
       pauseSim = true;
-      newBody.position = new THREE.Vector3(0, 0, 0);
+      newBody.position.x = 0.0;
+      newBody.position.y = 0.0;
+      newBody.position.z = 0.0;
+      
       scene.add(newBody);
     }
   };
@@ -139,6 +149,7 @@ angular.module('gravitationApp', []).controller('MainController',
 
   //initializing bodies, file Ephemeris.js is created by python code
   main.bodies = Ephemeris.bodies;
+
   let sun = main.bodies[0];
   let sunLight;
   main.add = function () {
@@ -195,7 +206,10 @@ angular.module('gravitationApp', []).controller('MainController',
     scene.add(body.mesh);
 
     let coord = transformInScreenCoord(body.position);
-    body.mesh.position = new THREE.Vector3(coord.x, coord.y, coord.z);
+    body.mesh.position.x = coord.x;
+    body.mesh.position.y = coord.y;
+    body.mesh.position.z = coord.z;
+
  }
 
  main.track = function (body) {
@@ -234,7 +248,7 @@ angular.module('gravitationApp', []).controller('MainController',
     renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement);
     controls.maxDistance = 10000;
     controls.enableDamping = true;
 //    controls.dampingFactor = 1;
@@ -343,7 +357,6 @@ angular.module('gravitationApp', []).controller('MainController',
       
   function physicsTick(){
     Gravity.step = main.simSpeed.stepSize;
-    Gravity.ApplyGravity(main.bodies);
     if(main.showTraj){
       if(trajUpdateCounter > trajUpdateFreq){
         updateTraj();
@@ -353,7 +366,8 @@ angular.module('gravitationApp', []).controller('MainController',
       }
     }
     for (let k=0; k<main.simSpeed.physLoop; k++){
-      Gravity.calculateGravity(main.bodies);
+      
+      Gravity.ApplyGravity(main.bodies);
       for (let i in main.bodies) {
         let body = main.bodies[i];
         if(!indicateDistantObjects){
@@ -363,11 +377,14 @@ angular.module('gravitationApp', []).controller('MainController',
         }
         if (!body.toDestroy) {
           let mesh = body.mesh;
+          body.physics_body.UpdatePositionalState(0.0, main.simSpeed.stepSize);
+          body.position = body.physics_body.position;
+          body.velocity = body.physics_body.velocity;
           let coord = transformInScreenCoord(body.position);
-          
-          mesh.position.x = coord.x;
-          mesh.position.y = coord.y;
-          mesh.position.z = coord.z;
+          mesh.position.copy(coord);
+          //mesh.position.x = coord.x;
+          //mesh.position.y = coord.y;
+          //mesh.position.z = coord.z;
         } else {
           main.remove(body);
         }
@@ -379,6 +396,7 @@ angular.module('gravitationApp', []).controller('MainController',
   window.addEventListener('mousedown', onMouseDown, false);
   window.addEventListener('mousemove', onMouseMove, false);
   window.addEventListener('mouseup', onMouseUp, false);
+
 
   function onMouseDown(event) {
     switch (event.button) {

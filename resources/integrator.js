@@ -1,4 +1,4 @@
-integrator = {
+Integrator = {
 
   rk4: function (fun, x, t, step, arg) {
     
