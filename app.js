@@ -34,7 +34,7 @@ angular.module('gravitationApp', []).controller('MainController',
   var dragStart = new THREE.Vector3();
   var dragEnd = new THREE.Vector3();
   var dragVector = new THREE.Vector3();
-  let mouseDrag = false;
+  main.mouseDrag = false;
   let pauseSim = false;
   main.bodiesListShown = false;
   main.showTraj = true;
@@ -136,7 +136,7 @@ angular.module('gravitationApp', []).controller('MainController',
   };
 
   main.newName = 'New';
-  main.newMass = 1;
+  main.newMass = 10;
   main.newRadius = 1000;
   main.newPositionX = 1;
   main.newPositionY = 0;
@@ -420,6 +420,7 @@ angular.module('gravitationApp', []).controller('MainController',
         if (main.creation) {
           main.mouseDrag = true;
           dragStart = pickVector3FromScene(planeZ, mouse, camera);
+          console.log(dragStart);
         }else{
           main.tracking = null;
           controls.maxDistance = 10000;
@@ -452,7 +453,7 @@ angular.module('gravitationApp', []).controller('MainController',
                          z: newBody.position.z / 100},
                         {x: dragVector.x / 3652.5, 
                          y: dragVector.y / 3652.5, 
-                         z: dragVector.z / 3652.5}, 0, 0x00ff00);
+                         z: dragVector.z / 3652.5});
           main.bodies.push(newPlanet);
           addToScene(newPlanet);
           scene.remove(newBody);
