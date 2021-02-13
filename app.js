@@ -3,6 +3,9 @@ angular.module('gravitationApp', []).controller('MainController',
   let main = this;
   let scene, camera, renderer, controls;
   main.availableSpeeds = [{physLoop: 1,  
+                           stepSize: 1/365/30/24/60/60, 
+                           name: "seconds per second"},
+                          {physLoop: 1,  
                            stepSize: 1/365/30/24/60, 
                            name: "minutes per second"},
                           {physLoop: 60, 
