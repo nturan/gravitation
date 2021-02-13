@@ -1,4 +1,4 @@
-import {PhysicsBody} from "/physics_engine/physics_body.js";
+import {PhysicsBody} from "./physics_engine/physics_body.js";
 
 class Body {
   constructor(name, mass, radius,
