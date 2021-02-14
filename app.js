@@ -11,11 +11,11 @@ angular.module('gravitationApp', []).controller('MainController',
   let main = this;
   let scene, camera, renderer, controls;
   main.availableSpeeds = Gravity.availableSpeeds;
-  //control variables
+  //UI control variables
   var dragStart = new THREE.Vector3();
   var dragEnd = new THREE.Vector3();
   var dragVector = new THREE.Vector3();
-  main.mouseDrag = false;
+  let mouseDrag = false;
   main.bodiesListShown = false;
   main.showTraj = true;
   let mouse = new THREE.Vector2();
@@ -27,12 +27,10 @@ angular.module('gravitationApp', []).controller('MainController',
   let phsTicksPerSecond = 30;
   let phsCycle = 1000/phsTicksPerSecond;
   let frmCounter = 0;
-  let trajLength = 100;//just array length, 
+  let trajLength = 200;//just array length, 
                        //calculating real time too complicated
-  let trajUpdateCounter = 0;
-  let trajUpdateFreq = 1; // phys Ticks
 
-  // creation plane
+  // new body creation plane
   let planeZ = new THREE.Mesh(new THREE.PlaneGeometry(100000, 100000), 
                               new THREE.MeshBasicMaterial(
                               {color: 0xffff00, side: THREE.DoubleSide}));
@@ -88,6 +86,9 @@ angular.module('gravitationApp', []).controller('MainController',
   }
            
   main.resetCamera = function () {
+    main.tracking = null;
+    main.simSpeed = main.availableSpeeds[2];
+    controls.maxDistance = 10000
     controls.reset();
   };
 
@@ -138,6 +139,7 @@ angular.module('gravitationApp', []).controller('MainController',
 
  main.track = function (body) {
    main.tracking = body;
+   main.simSpeed = main.availableSpeeds[0];
    controls.maxDistance = 2;
  };
 
@@ -154,7 +156,7 @@ angular.module('gravitationApp', []).controller('MainController',
                          100000);
     camera.position.set(500, -500, 500);
                 
-    main.simSpeed = main.availableSpeeds[3];
+    main.simSpeed = main.availableSpeeds[2];
     camera.up.set( 0, 0, 1 );
     for (let i in main.bodies) {
       scene.add(main.bodies[i].mesh);
@@ -198,7 +200,9 @@ angular.module('gravitationApp', []).controller('MainController',
                 
     if(phsTime - phsStart>= phsCycle && !Gravity.pause_simulation){
       phsStart = new Date().getTime();
-      physicsTick();;
+      for (let i = 0; i < main.simSpeed.physics_loop; i++){
+        physicsTick();
+      }
     }
 
 
@@ -207,14 +211,14 @@ angular.module('gravitationApp', []).controller('MainController',
       controls.target = new THREE.Vector3(pos.x, pos.y, pos.z);
       controls.update();
     }
-    if (main.creation && !main.mouseDrag) {
+    if (main.creation && !mouseDrag) {
       let newPos = pickVector3FromScene(planeZ, mouse, camera);
       newBody.position.x = newPos.x;
       newBody.position.y = newPos.y;
       newBody.position.z = newPos.z;
       controls.enabled = false;
       controls.update();
-    } else if( main.creation && main.mouseDrag ){
+    } else if( main.creation && mouseDrag ){
       dragEnd = pickVector3FromScene( planeZ, mouse, camera );
       dragVector = dragEnd.sub( dragStart );
       main.newVelocity = 0.1*Gravity.magnitudeVec3([dragVector.x,
@@ -230,29 +234,11 @@ angular.module('gravitationApp', []).controller('MainController',
     } else {
         controls.enabled = true;
         controls.update();
-    }
-    if (main.tracking != null){
-      //distantObjectIndication();
-    }          
+    }         
     if (main.bodiesListShown && apply){
       $scope.$apply();
     }
     renderer.render(scene, camera);
-  }
-
-  function distantObjectIndication(){
-    for (let i in main.bodies){
-      let body = main.bodies[i];
-      let coord = transformInScreenCoord(body.position);
-      let distMag = new THREE.Vector3()
-        .subVectors(coord, camera.position).length();
-      if (distMag>100){
-        Gravity.indicate_distant_objects = true;
-      }else {
-        Gravity.indicate_distant_objects = false;
-	break;
-      }
-    }
   }
 
   function updateTraj(){
@@ -267,9 +253,10 @@ angular.module('gravitationApp', []).controller('MainController',
       }
       if(traj.length > 3){
         scene.remove(body.trajObj);
+        const curve = new THREE.CatmullRomCurve3( traj );
         body.trajObj = new THREE.Line( 
-                             new THREE.BufferGeometry().setFromPoints(traj), 
-                             new THREE.LineBasicMaterial({color: body.color}));
+                               new THREE.BufferGeometry().setFromPoints(curve.getPoints(trajLength*2)), 
+                               new THREE.LineBasicMaterial({color: body.color, linewidth: 5}));
         scene.add(body.trajObj);
       }
       body.traj = traj;
@@ -281,12 +268,7 @@ angular.module('gravitationApp', []).controller('MainController',
       
   function physicsTick(){
     if(main.showTraj){
-      if(trajUpdateCounter > trajUpdateFreq){
-        updateTraj();
-        trajUpdateCounter = 0;
-      }else{
-        trajUpdateCounter++;
-      }
+      updateTraj();
     }
     Gravity.ApplyGravity(main.bodies);
     for (let i in main.bodies) {
@@ -329,9 +311,8 @@ angular.module('gravitationApp', []).controller('MainController',
         break;
       case 2:
         if (main.creation) {
-          main.mouseDrag = true;
+          mouseDrag = true;
           dragStart = pickVector3FromScene(planeZ, mouse, camera);
-          console.log(dragStart);
         }else{
           main.tracking = null;
           controls.maxDistance = 10000;
@@ -354,7 +335,7 @@ angular.module('gravitationApp', []).controller('MainController',
       case 1:
         break;
       case 2:
-        main.mouseDrag = false;
+        mouseDrag = false;
         if(main.creation){
           main.creation = false;
           Gravity.pause_simulation = false;
