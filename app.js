@@ -291,11 +291,6 @@ angular.module('gravitationApp', []).controller('MainController',
     Gravity.ApplyGravity(main.bodies);
     for (let i in main.bodies) {
       let body = main.bodies[i];
-      if(!Gravity.indicate_distant_objects){
-        body.mesh.children[1].visible = false;
-      }else{
-        body.mesh.children[1].visible = true;
-      }
       if (!body.toDestroy) {
         body.physics_body.UpdatePositionalState(0.0, main.simSpeed.stepSize);
         body.position = body.physics_body.position;
@@ -322,7 +317,7 @@ angular.module('gravitationApp', []).controller('MainController',
         for (let i in main.bodies) {
           let body = main.bodies[i];
           //intersectObjects maybe?
-          let intersect = raycaster.intersectObject(body.mesh.children[1]);
+          let intersect = raycaster.intersectObject(body.mesh);
             if (intersect.length > 0) {
                 main.track(body);
                 controls.maxDistance = 2;

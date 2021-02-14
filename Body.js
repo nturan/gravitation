@@ -3,9 +3,7 @@ import * as THREE from "https://unpkg.com/three/build/three.module.js";
 
 class Body {
   constructor(name, mass, radius,
-              initial_position, initial_velocity, 
-              color = 0xffffff, toDestroy = false,
-              traj=[], trajObj=null, mesh=null) {
+              initial_position, initial_velocity, mesh=null) {
     this.name = name;
     this.mass = mass/18981.3;
     this.radius = radius*1E-6;//0.01AU = km*1E-6
@@ -16,25 +14,23 @@ class Body {
     this.physics_body = new PhysicsBody(
       this.mass, this.position, this.velocity, 
       this.CalculateInertiaTensor.bind(this));
-    this.color = color;
-    this.toDestroy = toDestroy;
-    this.traj = traj;
-    this.trajObj = trajObj;
+    this.color = 0xffffff;
+    this.toDestroy = false;
+    this.traj = [];
+    this.trajObj = null;
 
-
-    //construct mesh for the celestial body
-    let geometry = new THREE.IcosahedronGeometry(this.radius, 2);
-    let material = new THREE.MeshPhongMaterial({
-      color: this.color, emissive: 0x072534
-      });
-    this.mesh = new THREE.Object3D();
-    this.mesh.add(new THREE.Mesh(geometry, material));
-    this.mesh.add(new THREE.Mesh(
-      new THREE.IcosahedronGeometry(5, 2),
-      new THREE.MeshBasicMaterial({
-        color: this.color,
-        opacity: 0.9,
-        transparent:  true}  )));
+    if (mesh == null){
+      //construct mesh for the celestial body
+      let geometry = new THREE.IcosahedronGeometry(this.radius, 2);
+      let material = new THREE.MeshPhongMaterial({
+        color: this.color, emissive: 0x072534
+        });
+      this.mesh = new THREE.Object3D();
+      this.mesh.add(new THREE.Mesh(geometry, material));
+    }else{
+      this.mesh = mesh;
+    }
+    
     let coord = this.TransformInScreenCoord(this.position);
     this.mesh.position.x = coord.x;
     this.mesh.position.y = coord.y;
@@ -82,60 +78,101 @@ class Body {
     return '0.00';
   }
 
-
-
 }
+
+function BuildPlanetMesh(radius, texture_file){
+  radius *= 1.0E-6;
+  let geometry = new THREE.IcosahedronGeometry(radius, 2);
+  let texture = new THREE.TextureLoader().load(texture_file);
+  let material = new THREE.MeshPhongMaterial({
+    map: texture
+    });
+
+  return new THREE.Mesh(geometry, material).rotateX(math.PI/2);
+}
+
+//building mesh for sun
+let sun_radius = 695500.0*1E-6;
+let sun_color = 0xFCFEDC;
+let sun_mesh = new THREE.Group();
+//construct mesh for the celestial body
+let sun_geometry = new THREE.IcosahedronGeometry(sun_radius, 2);
+let sun_texture = new THREE.TextureLoader().load("resources/2k_sun.jpg");
+let sun_material = new THREE.MeshPhongMaterial({
+  color: sun_color, emissive: 0xFCFEDC, map: sun_texture
+  });
+sun_mesh.add(new THREE.Mesh(sun_geometry, sun_material));
+let sun_light = new THREE.PointLight(0xffffff, 1, 0, 2);;
+sun_light.position.set(0, 0, 0);
+sun_mesh.add(sun_light);
+
 
 let sun = new Body("Sun",19885440.0,695500.0,
 {x: -1.139090933890510E-03 , y: 7.513548470174963E-03 ,z: -4.751221261400040E-05},
-{x: -8.103340265234835E-06 , y: 1.531073076683503E-06 ,z:  2.093972966295105E-07});
-let sun_mesh = sun.mesh;
-let sun_mesh_position = sun_mesh.position;
-let sun_light = new THREE.PointLight(0xffaaaa, 5, 0, 2);
-sun_light.position.set(sun_mesh.position.x, 
-                       sun_mesh.position.y, 
-                       sun_mesh.position.z);
-sun_light.color.setHSL( 0.55, 0.9, 0.5 );
-sun.mesh = new THREE.Group();
-sun.mesh.position.copy(sun_mesh_position);
-sun_mesh.position.x = 0.0;
-sun_mesh.position.y = 0.0;
-sun_mesh.position.z = 0.0;
-sun.mesh.add(sun_mesh);
-sun.mesh.add(sun_light);
+{x: -8.103340265234835E-06 , y: 1.531073076683503E-06 ,z:  2.093972966295105E-07}, sun_mesh);
+
+//building mesh for earth
+
+let ring_texture = new THREE.TextureLoader().load("resources/2k_saturn_ring_alpha.png");
+//ring_texture.rotation = math.PI/2;
+//ring_texture.updateMatrix();
+let ring_geometry = new THREE.RingBufferGeometry(1.005*60300*1.0E-6, 60300*1.0E-6*1.305, 32);
+let pos = ring_geometry.attributes.position;
+let v3 = new THREE.Vector3();
+for (let i =0; i < pos.count; i++){
+  v3.fromBufferAttribute(pos, i);
+  ring_geometry.attributes.uv.setXY(i, v3.length() < 1.2*60300*1.0E-6 ? 0 : 1, 1);
+}
+let ring_material = new THREE.MeshPhongMaterial({
+  map: ring_texture, transparent: true
+});
+let saturn_body = BuildPlanetMesh(54364, "resources/2k_saturn.jpg");
+saturn_body.scale.copy(new THREE.Vector3(1.0, 0.9, 1));
+let saturn_mesh = new THREE.Group();
+saturn_mesh.add(saturn_body);
+saturn_mesh.add(new THREE.Mesh(ring_geometry, ring_material));
 
 
 let Ephemeris = {bodies : [
   sun, new Body("Mercur",3.302,2440,
  { x: 2.712325922922563E-01 , y: 1.819716677932228E-01 , z: -1.077866088275325E-02},
- { x:-2.069213447486702E-02 , y: 2.492058633634082E-02 , z:  3.933933861696485E-03})
+ { x:-2.069213447486702E-02 , y: 2.492058633634082E-02 , z:  3.933933861696485E-03},
+ BuildPlanetMesh(2440, "resources/2k_mercury.jpg"))
  ,new Body("Venus",48.685,6052,
  { x: -5.728936053119389E-01 , y: -4.341301111844528E-01 ,z:  2.688719930686330E-02},
- { x:  1.221413056525722E-02 , y: -1.610029029497521E-02 ,z: -9.260442405719175E-04})
+ { x:  1.221413056525722E-02 , y: -1.610029029497521E-02 ,z: -9.260442405719175E-04},
+ BuildPlanetMesh(6052, "resources/2k_venus_atmosphere.jpg"))
  ,new Body("Earth",59.7219,6371,
  {x: -8.461345399508943E-01 , y:  5.198188201638625E-01 , z: -6.874116231359140E-05},
- {x: -9.202068150470241E-03 , y: -1.477025937149794E-02 , z:  2.181018061038459E-07})
+ {x: -9.202068150470241E-03 , y: -1.477025937149794E-02 , z:  2.181018061038459E-07},
+ BuildPlanetMesh(6371, "resources/2k_earth_daymap.jpg"))
  ,new Body("Mars",6.4185,3390,
  {x:  5.705339438331232E-01 , y: 1.409846673537129E+00 , z: 1.530908608548376E-02},
- {x: -1.243732896484183E-02 , y: 6.474674548082186E-03 , z: 4.408245110899003E-04})
+ {x: -1.243732896484183E-02 , y: 6.474674548082186E-03 , z: 4.408245110899003E-04},
+ BuildPlanetMesh(3390, "resources/2k_mars.jpg"))
  ,new Body("Jupiter",18981.3,69911,
  {x: -1.802834401723843E+00 , y: -5.014280704579202E+00 , z:  6.112364485199881E-02},
- {x:  7.010448905955205E-03 , y: -2.193302255507297E-03 , z: -1.477170884740540E-04})
+ {x:  7.010448905955205E-03 , y: -2.193302255507297E-03 , z: -1.477170884740540E-04},
+ BuildPlanetMesh(69911, "resources/2k_jupiter.jpg"))
  ,new Body("Saturn",5683.19,54364,
  {x: 2.206030955119386E+00 , y: -9.805055204585239E+00 , z:  8.267037770574978E-02},
- {x: 5.134836863993126E-03 , y:  1.207623115706131E-03 , z: -2.256603441981650E-04})
+ {x: 5.134836863993126E-03 , y:  1.207623115706131E-03 , z: -2.256603441981650E-04},
+ saturn_mesh)
  ,new Body("Uranus",868.103,24973,
 {x:  1.691576531998510E+01 , y: 1.040299290535852E+01 , z: -1.805089997039230E-01},
-{x: -2.089225716511510E-03 , y: 3.166920117890191E-03 , z:  3.877872984759312E-05})
+{x: -2.089225716511510E-03 , y: 3.166920117890191E-03 , z:  3.877872984759312E-05},
+BuildPlanetMesh(24973, "resources/2k_uranus.jpg"))
 ,new Body("Neptune",1024,24342,
 {x: 2.901792701698493E+01 , y: -7.334322263086601E+00 , z: -5.177112691425811E-01},
-{x: 7.480486820282755E-04 , y:  3.061681026453200E-03 , z: -8.041857175667311E-05})
+{x: 7.480486820282755E-04 , y:  3.061681026453200E-03 , z: -8.041857175667311E-05},
+BuildPlanetMesh(24342, "resources/2k_neptune.jpg"))
 ,new Body("Pluto",0.1307,1195,
 {x: 1.202593741257323E+01 , y: -3.151923742551384E+01 , z: -1.058521747038058E-01},
 {x: 3.011947033149633E-03 , y:  4.602992991939947E-04 , z: -9.262560073082725E-04})
 ,new Body("Moon",0.7349,1737,
 {x: -8.475142757438984E-01 , y:  5.217790085293892E-01 , z: -3.489291919490877E-05},
-{x: -9.707086464783627E-03 , y: -1.514846336243542E-02 , z:  5.686804539964647E-05})
+{x: -9.707086464783627E-03 , y: -1.514846336243542E-02 , z:  5.686804539964647E-05},
+BuildPlanetMesh(1737, "resources/2k_moon.jpg"))
 ,new Body("Io",0.8933,1821.3,
 {x: -1.803461674299824E+00 , y: -5.017016066105317E+00 , z:  6.101532458745745E-02},
 {x:  1.681093262738421E-02 , y: -4.425998369697550E-03 , z: -8.929365860245689E-05})

@@ -6,6 +6,9 @@ https://ssd.jpl.nasa.gov/horizons.cgi
 
 The Code is licensed under MIT Public License.
 
+## Reference ##
+- For planetary textures visit https://www.solarsystemscope.com/
+
 ## ToDo ##
 -Show speed vector, (partly done)
 -Refractoring(later again)
