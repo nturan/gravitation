@@ -10,7 +10,6 @@
                    maximum-scale=1.0">
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/5.4.0/math.min.js"></script>
-    <script src="resources/integrator.js"></script>
     <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body ng-controller="MainController as main" oncontextmenu="return false;">
@@ -70,6 +69,12 @@ target="_blank">AU</a> per year
       <label>Simulation Speed</label>
       <select ng-model="main.simSpeed" 
               ng-options="option.name for option in main.availableSpeeds">
+      </select>
+    </div>
+    <div class='row'>
+      <label>Integrator</label>
+      <select ng-model="main.integrator" 
+              ng-options="option.name for option in main.availableIntegrators">
       </select>
     </div>
 </div>

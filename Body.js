@@ -1,4 +1,4 @@
-import {PhysicsBody} from "./physics_engine/physics_body.js";
+import {PhysicsBody} from "./physics_engine/physics_engine.js";
 import * as THREE from "https://unpkg.com/three/build/three.module.js";
 
 class Body {
@@ -101,11 +101,13 @@ let sun_texture = new THREE.TextureLoader().load("resources/2k_sun.jpg");
 let sun_material = new THREE.MeshPhongMaterial({
   color: sun_color, emissive: 0xFCFEDC, map: sun_texture
   });
-sun_mesh.add(new THREE.Mesh(sun_geometry, sun_material));
+let sun_body = new THREE.Mesh(sun_geometry, sun_material);
+
+sun_mesh.add(sun_body);
 let sun_light = new THREE.PointLight(0xffffff, 1, 0, 2);;
 sun_light.position.set(0, 0, 0);
 sun_mesh.add(sun_light);
-
+sun_mesh.rotateX(math.PI/2);
 
 let sun = new Body("Sun",19885440.0,695500.0,
 {x: -1.139090933890510E-03 , y: 7.513548470174963E-03 ,z: -4.751221261400040E-05},
@@ -127,10 +129,15 @@ let ring_material = new THREE.MeshPhongMaterial({
   map: ring_texture, transparent: true
 });
 let saturn_body = BuildPlanetMesh(54364, "resources/2k_saturn.jpg");
-saturn_body.scale.copy(new THREE.Vector3(1.0, 0.9, 1));
+saturn_body.rotateX(-math.PI/2);
+saturn_body.scale.copy(new THREE.Vector3(1, 0.9, 1));
 let saturn_mesh = new THREE.Group();
 saturn_mesh.add(saturn_body);
-saturn_mesh.add(new THREE.Mesh(ring_geometry, ring_material));
+let ring_mesh = new THREE.Mesh(ring_geometry, ring_material);
+ring_mesh.rotateX(-math.PI/2)
+saturn_mesh.add(ring_mesh);
+
+saturn_mesh.rotateX(math.PI/2);
 
 
 let Ephemeris = {bodies : [

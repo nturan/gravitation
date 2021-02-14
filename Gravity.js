@@ -1,5 +1,6 @@
 
 import * as THREE from "https://unpkg.com/three/build/three.module.js";
+import { Integrator } from "./physics_engine/physics_engine.js";
 
 let Gravity = {
   // constants
@@ -22,6 +23,11 @@ let Gravity = {
                       {physics_loop: 30,
                         stepSize: 1/365/30,       
                         name: "months per second"}],
+
+  availableIntegrators: [{ f: Integrator.euler,
+                           name: "simple euler method"},
+                         { f: Integrator.rk4,
+                          name: "4th order runge-kutta"}],
 
   ApplyGravity: function (bodies) {
     let n = bodies.length;

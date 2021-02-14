@@ -11,6 +11,7 @@ angular.module('gravitationApp', []).controller('MainController',
   let main = this;
   let scene, camera, renderer, controls;
   main.availableSpeeds = Gravity.availableSpeeds;
+  main.availableIntegrators = Gravity.availableIntegrators;
   //UI control variables
   var dragStart = new THREE.Vector3();
   var dragEnd = new THREE.Vector3();
@@ -157,6 +158,7 @@ angular.module('gravitationApp', []).controller('MainController',
     camera.position.set(500, -500, 500);
                 
     main.simSpeed = main.availableSpeeds[2];
+    main.integrator = main.availableIntegrators[1];
     camera.up.set( 0, 0, 1 );
     for (let i in main.bodies) {
       scene.add(main.bodies[i].mesh);
@@ -274,11 +276,12 @@ angular.module('gravitationApp', []).controller('MainController',
     for (let i in main.bodies) {
       let body = main.bodies[i];
       if (!body.toDestroy) {
-        body.physics_body.UpdatePositionalState(0.0, main.simSpeed.stepSize);
+        body.physics_body.UpdatePositionalState(0.0, main.simSpeed.stepSize, main.integrator.f);
         body.position = body.physics_body.position;
         body.velocity = body.physics_body.velocity;
         let coord = transformInScreenCoord(body.position);
         body.mesh.position.copy(coord);
+        body.mesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), math.PI/100);
       } else {
         main.remove(body);
       }
