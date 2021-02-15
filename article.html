@@ -15,16 +15,81 @@ a runge-kutta-4 integrator is used to solve the differential equation of
 motion, Newton's universal gravitational law.  Here is the overview of the 
 features:
 <ul>
-  <li><a href="#">variable simulation speed</a></li>
-  <li><a href="#">posibility add new objects to the system on the run</a></li>
-  <li><a href="#">distant object indication</a></li>
-  <li><a href="#">displaying past object trajectory</a></li>
-  <li><a href="#">camera tracking objects</a></li>
-  <li><a href="#">posibility to improve or change integrator</a></li>
+  <li><a href="#variableSimSpeed">variable simulation speed</a></li>
+  <li><a href="#newBody">posibility to add new objects to the system on the run</a>
+  </li>
+  <li><a href="#objectTraj">displaying past object trajectory</a></li>
+  <li>
+    <a href="#ODEsolver">
+      posibility to choose between available numerical integrators</a></li>
 </ul>
 <h2>Physical Background</h2>
-Newton's universial gravitational law between bodies \( i \) and \( j \) 
+Newton's universal gravitational law between celestial bodies \( i \) and \( j \) 
 can be written as follows:
 \[ \vec{F}_{ij} = G \frac{ m_i m_j (\vec{x}_j - \vec{x}_i) }{
                           |\vec{x}_j - \vec{x}_i|^3}. \]
-Hier \( \vec{F}_{ij} \) is the force on the body \( i \).  \( G=6.67\times 10^{-11} m^3 kg^{-1}s^{-2} \) is the gravitational constant. 
+Hier \( \vec{F}_{ij} \) is the force on the body \( i \) applied by \( j \).  
+\( G=6.67\times 10^{-11} m^3 kg^{-1}s^{-2} \) is the gravitational constant. 
+\( m_i \) and \( \vec{x}_i \) are the mass and position vector of the body i respectively.
+Summing over index \( j \) would give the total force on the body \( i \):
+\[
+\vec{F}_{i} = \sum\limits_{j=1}^N G \frac{ m_i m_j (\vec{x}_j - \vec{x}_i) }{
+  |\vec{x}_j - \vec{x}_i|^3}.
+\]
+\( N \) is the number of celestial bodies in the simulation, hence the name N-body simulation.
+Using Newton's second law \( \vec{F} = m \vec{a} \) and writing acceleration as the second
+derivative of the position vector \( \vec{a} = \ddot{\vec{x}} \), we can rewrite the gravitation law
+as follows:
+\[
+m_i\ddot{\vec{x}}_{i} = \sum\limits_{j=1}^N G \frac{ m_i m_j (\vec{x}_j - \vec{x}_i) }{
+  |\vec{x}_j - \vec{x}_i|^3}.
+\]
+This is a second order 
+<a href="https://en.wikipedia.org/wiki/Ordinary_differential_equation">ordinary differential equation</a> (ODE):
+\[
+  \ddot{\vec{x}} = f(t, \vec{x}).
+\]
+One can rewrite a second order ODE as a first order ODE as follows:
+$$
+\begin{align}
+  \vec{y} &= \left( \vec{x}, \dot{\vec{x}} \right), \\
+  \dot{\vec{y}} &= \left( \dot{\vec{x}}, f(t, \vec{x}) \right),\\
+  \dot{\vec{y}} &= \tilde{f}(t, \vec{y}).
+\end{align} 
+$$
+<h3 id="ODEsolver">Numerical Integrators</h3>
+This particular type of ODE we are dealing with in the N-body-simulation is called
+initial value problem.  There are many mathematical methods to solve initial value
+problems numerically. One of the simplest ones is the 
+<a href="https://en.wikipedia.org/wiki/Euler_method">euler method</a>.  It is an iterative
+solution, where one starts at the given initial values \( \vec{y}_0 \) at \( t_0 \) and calculate the \( n \)-th 
+solution as follows:
+\[
+\vec{y}_n = \vec{y}_{n-1} + h \tilde{f}(t_{n-1}, \vec{y}_{n-1}),
+\]
+where \( h \) is the time step size: \( t_n = t_{n-1} + h \). 
+The euler method gives reasonable numerical approximations to the solutions of 
+the ODEs when the step size \( h \) is small enough.  The 
+<a href="https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods">runge-kutta algorithms</a>
+are slightly more complicated.  But they deliver better results than euler method for the same stepsize. 
+In our program one can change the integrator used by the physics engine during runtime.
+<h2 id="variableSimSpeed">Simulation</h2>
+Simulating N-body-problem means solving the ODE of the problem in the runtime. Our program aims to call 30
+<b>physics ticks</b> per second.  In a physics tick the next step of the solution for all bodies is calculated. 
+One can change the speed of the time progress in the simulation simple by changing the step size \( h \). 
+This feature is also implemented in our program.  Though for some speeds the step size is so big, that the simulation
+becomes unstable, e.g. jupiters and saturns satellites jump around.  To prevent this we increased the 
+number of physics ticks per second for high simulation speeds, which, sadly, resulted in the performance drop. 
+<h2 id="objectTraj">Object Trajectories</h2> 
+<img src="resources/ObjectTrajectories.png" style="width:500px; height:300px;"><br>
+From the start of the simulation position vectors of the celestial bodies in every physics frame is saved and 
+the array of this points are visualized in form of a trajectory.  The number of the points saved in the trajectory
+is fixed to be 200.  For slower simulation speeds the trajectory seems to be really short. 
+<h2 id="newBody">Adding New Bodies To The System</h2>
+<img src="resources/CreateNewBody.png" style="width:500px; height:300px;"><br>
+Clicking the button <b>Create Body</b> will pause the simulation and allow placing new celestial objects into our solar
+system.  We suggest to play around with this feature to see, e.g. what happens if we add another sun between 
+Earth and Mars.  A mouse drag with right mouse button will place the body at the start point of the drag and allow to 
+determine the direction and magnitude of the speed vector according the drag end position. For now it is only possible 
+to place new bodies on the <a href="https://en.wikipedia.org/wiki/Ecliptic">ecliptical plane</a>. You can add custom name
+and change mass and radius of the new body at the top of the screen. 

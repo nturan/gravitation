@@ -1,14 +1,28 @@
 # Gravitation #
 --------------------------------------------------------------------------------
-N-Body-Simulation. Numerical Integration of differential equations with 
-runge-kutta method. Initial values for solar system are taken from 
-https://ssd.jpl.nasa.gov/horizons.cgi
+A demonstration of the N-Body-simulation. 
 
-The Code is licensed under MIT Public License.
+Numerical Integration of differential equations (in this case gravity law) is performed
+with [runge-kutta method](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods).
+There is also a possibility to choose simpler [euler integration method](https://en.wikipedia.org/wiki/Euler_method).
+
+Initial values for velocities and positions of the celestial bodies in our solar system 
+are taken from [HORIZONS](https://ssd.jpl.nasa.gov/horizons.cgi)
+Telnet Server of NASA. 
+
+I used my own implementation of a simple [physics engine](https://github.com/nturan/physics_engine).
+
+3D visualisation made possible thanks to [threejs](https://github.com/mrdoob/three.js/)
+
+
+
 
 ## Reference ##
-- For planetary textures visit https://www.solarsystemscope.com/
+- For planetary textures visit [SolarSystemScope](https://www.solarsystemscope.com/about) 
+
+## License ##
+The Code is licensed under MIT Public License.
 
 ## ToDo ##
--Show speed vector, (partly done)
--Refractoring(later again)
+- Add halo effect for the sun.
+- Implement better camera controlls
