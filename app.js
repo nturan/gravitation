@@ -1,6 +1,6 @@
 import {Body, Ephemeris} from "./Body.js";
-import * as THREE from "https://unpkg.com/three/build/three.module.js";
-import { OrbitControls } from 'https://unpkg.com/three/examples/jsm/controls/OrbitControls.js';
+import * as THREE from "https://cdn.skypack.dev/three";
+import { OrbitControls } from 'https://cdn.skypack.dev/three/examples/jsm/controls/OrbitControls.js';
 import {Gravity} from "./Gravity.js"
 
 angular.module('gravitationApp', []).controller('MainController', 
